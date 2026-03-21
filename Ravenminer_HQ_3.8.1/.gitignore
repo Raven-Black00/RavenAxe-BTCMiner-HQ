@@ -1,0 +1,17 @@
+# Build artifacts
+build/
+dist/
+*.spec
+__pycache__/
+*.pyc
+*.pyo
+
+# Runtime configs (contain personal IPs / webhook URLs)
+ravenminer_config.json
+
+# PyInstaller
+*.manifest
+
+# OS
+.DS_Store
+Thumbs.db

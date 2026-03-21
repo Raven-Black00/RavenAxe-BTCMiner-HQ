@@ -1,0 +1,8 @@
+{
+  "discord_webhook": "",
+  "alert_temp_threshold": 85.0,
+  "alert_vr_temp_threshold": 85.0,
+  "alert_hash_threshold": 0.5,
+  "alert_on_block": true,
+  "alert_on_offline": true
+}
