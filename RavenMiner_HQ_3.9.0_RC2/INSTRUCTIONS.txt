@@ -1,0 +1,148 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║    ᚱ ᚨ ᚡ ᛖ ᚾ ᛗ ᛁ ᚾ ᛖ ᚱ   ᚺ ᛟ ᛃ   —   3.9.0  RC2                          ║
+║                                                                              ║
+║    ᛁᚾᛊᛏᚱᚢᚲᛏᛁᛟᚾᛊ  —  Setup & Operation Guide                                ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ᛊᛏᛖᛈ  ᛁ  —  PREREQUISITES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1. Install Python 3.9 or newer from https://python.org
+     └─ On Windows: check "Add Python to PATH" during install
+
+  2. Open a terminal / command prompt in this folder and run:
+
+       pip install -r requirements.txt
+
+  3. Confirm your BitAxe / AxeOS miner is:
+     └─ Powered on and connected to your local network
+     └─ Accessible at its IP address (e.g. 192.168.68.100)
+     └─ Running firmware that exposes /api/system/info
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ᛊᛏᛖᛈ  ᛁᛁ  —  FIRST LAUNCH (FROM SOURCE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Run the script directly:
+
+    python src/Ravenminer_HQ_3.9.0_RC2.py
+
+  On first launch you will see the ᚱᚨᚡᛖᚱᚵᛖᚱᛖᚱ ᚺᛟᛃ setup dialog.
+  Enter your miner's local IP address and press  ✔ CONNECT.
+
+  Your IP is saved to:
+    ravenminer_config.json   (next to the script / .exe)
+
+  To change the IP later: open Settings → Miner IP field → Save IP.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ᛊᛏᛖᛈ  ᛁᛁᛁ  —  BUILDING A STANDALONE .EXE (WINDOWS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1. Make sure PyInstaller is installed:
+       pip install pyinstaller
+
+  2. Double-click:
+       build_tools\BUILD_RC2.bat
+
+  3. When the build completes the .exe will be at:
+       dist\RavenMinerHQ.exe
+
+  4. Copy these files to the same folder as the .exe before running it:
+       ravenminer_config.json     (auto-created on first run if missing)
+       ravenminer_alerts.json     (auto-created on first run if missing)
+
+  NOTE: The .exe is self-contained — no Python install needed on the target
+  machine. The build script handles --onefile, windowed mode, and the name.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ᛊᛏᛖᛈ  ᛁᚡ  —  CONFIGURING DISCORD ALERTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1. In Discord: Server Settings → Integrations → Webhooks → New Webhook
+     Copy the webhook URL.
+
+  2. In RavenMiner HQ: click the ⚙ gear icon (bottom-right of right panel)
+     or press the rune label below it.
+
+  3. Paste the webhook URL into the "Discord Webhook URL" field.
+
+  4. Set your thresholds:
+     ┌─────────────────────────────┬──────────────────────────────────────┐
+     │  Field                      │  Meaning                             │
+     ├─────────────────────────────┼──────────────────────────────────────┤
+     │  ASIC Temp Threshold (°C)   │  Alert if ASIC temp ≥ this value     │
+     │  VR Temp Threshold (°C)     │  Alert if VR temp ≥ this value       │
+     │  Low Hashrate Threshold     │  Alert if TH/s drops below this      │
+     │  Alert on Block Found       │  Tick to receive ⛏️ block alerts      │
+     │  Alert on Offline           │  Tick to receive 🔴 offline alerts   │
+     └─────────────────────────────┴──────────────────────────────────────┘
+
+  5. Click Save Alerts. Settings persist across restarts in
+     ravenminer_alerts.json.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ᛊᛏᛖᛈ  ᚡ  —  USING THE DASHBOARD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ┌────────────────────────────────────────────────────────────────────────┐
+  │  KEYBOARD SHORTCUTS                                                    │
+  │  ESC             Quit the application                                  │
+  │  Win + D         Minimise (Windows default)                            │
+  └────────────────────────────────────────────────────────────────────────┘
+
+  ┌────────────────────────────────────────────────────────────────────────┐
+  │  SYSTEM TRAY                                                           │
+  │  Click the minimise button → app hides to system tray (if pystray is  │
+  │  installed). Right-click the tray icon to restore or quit.             │
+  └────────────────────────────────────────────────────────────────────────┘
+
+  ┌────────────────────────────────────────────────────────────────────────┐
+  │  REFRESH INTERVAL                                                      │
+  │  Bottom-right of the window — type a new value (seconds) and press     │
+  │  Enter or Tab to apply. Minimum enforced: 0.1s                        │
+  └────────────────────────────────────────────────────────────────────────┘
+
+  ┌────────────────────────────────────────────────────────────────────────┐
+  │  TEST FLASH                                                            │
+  │  The TEST FLASH button triggers the Valknut animation manually.        │
+  │  Useful to verify PIL/Pillow is working and the image loaded.          │
+  └────────────────────────────────────────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ᛏᚱᛟᚢᛒᛚᛖᛊᚺᛟᛟᛏᛁᚾᚷ — TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  PROBLEM  : "Error: HTTPConnectionPool ... timed out"
+  SOLUTION : Verify miner IP in Settings. Confirm miner is on, same LAN,
+             and not blocked by firewall. Ping it: ping 192.168.68.100
+
+  PROBLEM  : Valknut / Vegvisir not showing, or just a blank box
+  SOLUTION : Install Pillow:  pip install Pillow
+             The app will still run without it but image animations are
+             disabled.
+
+  PROBLEM  : System tray icon not appearing
+  SOLUTION : Install pystray:  pip install pystray Pillow
+
+  PROBLEM  : .exe fails to launch (missing DLL / import error)
+  SOLUTION : Re-run BUILD_RC2.bat. If it fails, try:
+               pip install --upgrade pyinstaller
+             Then build again.
+
+  PROBLEM  : "ModuleNotFoundError: No module named 'tkinter'"
+  SOLUTION : On Linux, install:  sudo apt install python3-tk
+             On Windows this should not occur with a standard Python install.
+
+  PROBLEM  : BTC price shows "--"
+  SOLUTION : Check internet connectivity. CoinGecko may be rate-limiting;
+             the price refreshes every ~60 seconds automatically.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ᚱᚢᚾᛖᛊᛗᛁᛏᚺ  —  Author: Alan Klusacek  |  ᚡ 3.9.0 RC2  |  2026-03-22
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ᚠᛖᛟ ᛏᛁᚱ ᛟᛞᛁᚾᚾ  —  May Odin guide your hashes true
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
