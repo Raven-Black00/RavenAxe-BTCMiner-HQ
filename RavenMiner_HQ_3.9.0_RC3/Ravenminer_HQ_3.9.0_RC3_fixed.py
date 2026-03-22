@@ -82,7 +82,7 @@ def send_discord_alert(webhook_url, title, message, color=0xff3030):
         return
     import time as _t2
     payload = {"embeds": [{"title": title, "description": message, "color": color,
-        "footer": {"text": "RavenMiner HQ 3.9.0 RC3 • " + _t2.strftime("%H:%M:%S")}}]}
+        "footer": {"text": "RavenMiner HQ " + VERSION + " • " + _t2.strftime("%H:%M:%S")}}]}
     def _post():
         try: requests.post(webhook_url, json=payload, timeout=6)
         except Exception as ex: print("Discord webhook error:", ex)
@@ -93,6 +93,7 @@ def send_discord_alert(webhook_url, title, message, color=0xff3030):
 
 API_URL  = "http://" + MINER_IP + "/api/system/info"
 REFRESH  = 0.5
+VERSION  = "v3.9.0 RC3"
 
 BG          = "#080810"
 COL_L       = "#0e0e1a"
@@ -396,14 +397,16 @@ class RavenMinerDash:
         tk.Label(soo_frame, text="sonofodin@outlook.com",
                  font=("Courier",9), fg=GOLD, bg=PURPLE_DIM).pack()
         self.lbl_clock=tk.Label(hdr,text="",font=("Courier",18),fg=GOLD,bg=PURPLE_DIM)
-        self.lbl_clock.pack(side="right",padx=20)
+        self.lbl_clock.pack(side="right",padx=20,anchor="n")
+        self.lbl_version_small=tk.Label(hdr, text=VERSION,
+                                       font=("Courier",8), fg=GOLD_BRIGHT,
+                                       bg=PURPLE_DIM)
+        self.lbl_version_small.pack(side="right", padx=20, anchor="n")
         self.theme_btn=tk.Button(hdr,text="☾ DARK",font=("Courier",10,"bold"),
                                   bg=PURPLE_DIM,fg=GOLD_BRIGHT,activebackground=PURPLE,
                                   relief="flat",cursor="hand2",bd=0,
                                   command=self._toggle_theme)
         self.theme_btn.pack(side="right",padx=10)
-        self.lbl_version=tk.Label(hdr,text="",font=("Courier",11),fg=GOLD,bg=PURPLE_DIM)
-        self.lbl_version.pack(side="right",padx=10)
         tk.Frame(self.root,height=2,bg=GOLD).place(relx=0,y=70,relwidth=1)
         body=tk.Frame(self.root,bg=BG); body.place(relx=0,y=72,relwidth=1,height=sh-72-60)
         left=tk.Frame(body,bg=COL_L,width=310); left.pack(side="left",fill="both"); left.pack_propagate(False)
@@ -439,9 +442,10 @@ class RavenMinerDash:
         tk.Label(bottom,text="REFRESH s:",font=("Courier",9),fg=GOLD,bg="#0a0018").pack(side="right",padx=(0,0))
         tk.Button(bottom,text="TEST FLASH",font=("Courier",9),bg=PURPLE_DIM,fg=GOLD_BRIGHT,
                   activebackground=PURPLE,command=self._trigger_valknut_flash).pack(side="right",padx=6,pady=10)
-        self.lbl_status=tk.Label(bottom,text="Connecting...",font=("Courier",10),fg=GOLD,bg="#0a0018",
-                                  wraplength=240,justify="right")
-        self.lbl_status.pack(side="right",padx=10)
+        self.lbl_status=tk.Label(bottom,text="Connecting...",font=("Courier",10),fg=GOLD,bg="#0a0018",anchor="w")
+        self.lbl_status.pack(side="left",fill="x",expand=True,padx=10,pady=4)
+        self.lbl_version=tk.Label(bottom,text="",font=("Courier",10),fg=GOLD,bg="#0a0018")
+        self.lbl_version.pack(side="right",padx=10,pady=4)
         self._tick_clock()
         self._last_data_time = 0
         self._pulse_phase = 0.0
