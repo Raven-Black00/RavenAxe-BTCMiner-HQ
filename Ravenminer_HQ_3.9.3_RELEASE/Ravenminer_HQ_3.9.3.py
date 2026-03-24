@@ -544,6 +544,16 @@ class RavenMinerDash:
                                        font=("Courier",8), fg=GOLD_BRIGHT,
                                        bg=PURPLE_DIM)
         self.lbl_version_small.pack(side="right", padx=20, anchor="n")
+        # v3.9.4: click version label → open GitHub releases page
+        import webbrowser as _wb
+        _GITHUB_URL = "https://github.com/Raven-Black00/RavenMiner-HQ"
+        self.lbl_version_small.config(cursor="hand2")
+        self.lbl_version_small.bind("<Button-1>",
+            lambda e: _wb.open_new_tab(_GITHUB_URL))
+        self.lbl_version_small.bind("<Enter>",
+            lambda e: self.lbl_version_small.config(fg="#ffffff", text=VERSION+" ↗ GitHub"))
+        self.lbl_version_small.bind("<Leave>",
+            lambda e: self.lbl_version_small.config(fg=PURPLE_DIM, text=VERSION))
         self.theme_btn=tk.Button(hdr,text="☾ DARK",font=("Courier",10,"bold"),
                                   bg=PURPLE_DIM,fg=GOLD_BRIGHT,activebackground=PURPLE,
                                   relief="flat",cursor="hand2",bd=0,
@@ -612,22 +622,17 @@ class RavenMinerDash:
 
     def _build_left(self,p):
         self._section_title(p,RUNE_TEMP+"TEMPERATURES",COL_L)
-        self._stat_block(p,"ASIC TEMP","--","C",ORANGE,"lbl_asic_temp",COL_L)
-        self._divider(p)
-        self._stat_block(p,"VR TEMP","--","C",GOLD,"lbl_vr_temp",COL_L)
-        self._divider(p)
         tk.Label(p,text="ASIC GAUGE",font=("Courier",11),fg=GOLD,bg=COL_L).pack(pady=(10,2))
         self.gauge_canvas=Canvas(p,width=200,height=210,bg=COL_L,highlightthickness=0); self.gauge_canvas.pack()
         self._draw_gauge(self.gauge_canvas, 0, ORANGE, warn=55, crit=70); self._divider(p)
         tk.Label(p,text="VR GAUGE",font=("Courier",11),fg=GOLD,bg=COL_L).pack(pady=(10,2))
         self.vr_gauge_canvas=Canvas(p,width=200,height=210,bg=COL_L,highlightthickness=0); self.vr_gauge_canvas.pack()
         self._draw_gauge(self.vr_gauge_canvas, 0, CYAN, warn=50, crit=65); self._divider(p)
+        tk.Label(p,text="VOLTAGE",font=("Courier",11),fg=GREEN,bg=COL_L).pack(pady=(10,2))
+        self.volt_gauge_canvas=Canvas(p,width=200,height=210,bg=COL_L,highlightthickness=0); self.volt_gauge_canvas.pack()
+        self._draw_gauge(self.volt_gauge_canvas, 0, GREEN, warn=11.9, crit=11.5, lo=10.0, hi=13.5, voltage_mode=True); self._divider(p)
         self._stat_block(p,"OVERHEAT LIMIT","--","C",RED,"lbl_overheat",COL_L); self._divider(p)
         self._stat_block(p,"TARGET TEMP","--","C",CYAN,"lbl_target_temp",COL_L)
-        self._divider(p)
-        self._stat_block(p,"HR GRAPH",str(HR_REFRESH),"s",GOLD,"lbl_hr_refresh_stat",COL_L)
-        self._divider(p)
-        self._stat_block(p,"REFRESH","1","s",CYAN,"lbl_refresh_stat",COL_L)
 
     def _build_centre(self,p):
         # Vegvisir background canvas - fills entire centre column
@@ -805,31 +810,81 @@ class RavenMinerDash:
         lbl=tk.Label(f,text=value+" "+unit,font=("Courier",16 if small else 26,"bold"),fg=fg,bg=bg)
         lbl.pack(anchor="e"); setattr(self,attr,lbl)
 
-    def _draw_gauge(self,canvas,temp,needle_color=None,warn=55,crit=60):
+    def _draw_gauge(self,canvas,temp,needle_color=None,warn=55,crit=60,lo=0.0,hi=120.0,voltage_mode=False):
         if needle_color is None: needle_color=ORANGE
         c=canvas; c.delete("all"); cx,cy,r=100,92,54
-        MAX_TEMP=120.0
-        for t in range(0, int(MAX_TEMP)+1, 5):
-            a=math.radians(210-(t/MAX_TEMP)*240)
-            is_major=(t%20==0)
-            t_out=r+2; t_in=r+(10 if is_major else 5)
-            col="#666688" if is_major else "#333355"
-            lw=2 if is_major else 1
-            c.create_line(cx+t_out*math.cos(a),cy-t_out*math.sin(a),
-                          cx+t_in*math.cos(a), cy-t_in*math.sin(a),fill=col,width=lw)
-        for t in range(0, int(MAX_TEMP)+1, 10):
-            a=math.radians(210-(t/MAX_TEMP)*240)
-            lx=cx+(r+22)*math.cos(a); ly=cy-(r+22)*math.sin(a)
-            lbl_col=RED if t>=crit else ORANGE if t>=warn else GREEN
-            c.create_text(lx,ly,text=str(t),fill=lbl_col,font=("Courier",7,"bold"))
-        c.create_arc(cx-r,cy-r,cx+r,cy+r,start=210,extent=-240,style="arc",outline=PURPLE_DIM,width=16)
-        pct=min(max(temp/MAX_TEMP,0),1); sweep=-240*pct
-        color=GREEN if temp<warn else ORANGE if temp<=crit else RED
-        if abs(sweep)>0.5: c.create_arc(cx-r,cy-r,cx+r,cy+r,start=210,extent=sweep,style="arc",outline=color,width=16)
-        ar=math.radians(210-240*pct)
-        c.create_line(cx,cy,cx+(r-10)*math.cos(ar),cy-(r-10)*math.sin(ar),fill=GOLD_BRIGHT,width=3)
-        c.create_oval(cx-5,cy-5,cx+5,cy+5,fill=GOLD,outline="")
-        c.create_text(cx,cy+18,text=str(round(temp,1))+" C",font=("Courier",14,"bold"),fill=color)
+        MAX_TEMP=hi; MIN_TEMP=lo
+        span=max(MAX_TEMP-MIN_TEMP,0.001)
+        def _ang(v): return math.radians(210-((v-MIN_TEMP)/span)*240)
+
+        if voltage_mode:
+            # ── Coloured arc bands: red 0-11.5, orange 11.5-11.9, green 11.9-12.9, orange 12.9+ ──
+            bands=[
+                (lo,    11.5, RED),
+                (11.5,  11.9, ORANGE),
+                (11.9,  12.9, GREEN),
+                (12.9,  hi,   ORANGE),
+            ]
+            for b_lo, b_hi, bcol in bands:
+                b_lo=max(b_lo,lo); b_hi=min(b_hi,hi)
+                if b_lo>=b_hi: continue
+                a_start=math.degrees(_ang(b_lo))
+                a_end  =math.degrees(_ang(b_hi))
+                extent = a_end-a_start
+                c.create_arc(cx-r,cy-r,cx+r,cy+r,start=a_start,extent=extent,
+                             style="arc",outline=bcol,width=16)
+            # tick marks: major every 1V, minor every 0.5V, micro every 0.1V
+            v = lo
+            while v <= hi + 0.001:
+                vr = round(v, 1)
+                is_major = abs(vr - round(vr)) < 0.01          # whole volt
+                is_half  = abs((vr * 2) - round(vr * 2)) < 0.01 and not is_major  # 0.5V
+                is_micro = not is_major and not is_half         # 0.1V
+                t_out = r + 2
+                t_in  = r + (11 if is_major else 7 if is_half else 4)
+                col   = "#aaaacc" if is_major else "#666688" if is_half else "#2a2a44"
+                lw    = 2 if is_major else 1
+                a = _ang(vr)
+                c.create_line(cx+t_out*math.cos(a), cy-t_out*math.sin(a),
+                              cx+t_in *math.cos(a), cy-t_in *math.sin(a), fill=col, width=lw)
+                v = round(v + 0.1, 1)
+            # labels every 1V
+            for v in range(int(lo), int(hi)+1):
+                if v > hi: break
+                a=_ang(v)
+                lx=cx+(r+22)*math.cos(a); ly=cy-(r+22)*math.sin(a)
+                lbl_col=RED if v<11.5 else ORANGE if v<11.9 else GREEN if v<=12.9 else ORANGE
+                c.create_text(lx,ly,text=str(v),fill=lbl_col,font=("Courier",7,"bold"))
+            # needle
+            pct=min(max((temp-MIN_TEMP)/span,0),1)
+            color=RED if temp<11.5 else ORANGE if temp<11.9 else GREEN if temp<=12.9 else ORANGE
+            ar=math.radians(210-240*pct)
+            c.create_line(cx,cy,cx+(r-10)*math.cos(ar),cy-(r-10)*math.sin(ar),fill=GOLD_BRIGHT,width=3)
+            c.create_oval(cx-5,cy-5,cx+5,cy+5,fill=GOLD,outline="")
+            c.create_text(cx,cy+18,text=str(round(temp,2))+" V",font=("Courier",13,"bold"),fill=color)
+        else:
+            # ── Standard temp gauge ──
+            for t in range(0, int(MAX_TEMP)+1, 5):
+                a=math.radians(210-(t/MAX_TEMP)*240)
+                is_major=(t%20==0)
+                t_out=r+2; t_in=r+(10 if is_major else 5)
+                col="#666688" if is_major else "#333355"
+                lw=2 if is_major else 1
+                c.create_line(cx+t_out*math.cos(a),cy-t_out*math.sin(a),
+                              cx+t_in*math.cos(a), cy-t_in*math.sin(a),fill=col,width=lw)
+            for t in range(0, int(MAX_TEMP)+1, 10):
+                a=math.radians(210-(t/MAX_TEMP)*240)
+                lx=cx+(r+22)*math.cos(a); ly=cy-(r+22)*math.sin(a)
+                lbl_col=RED if t>=crit else ORANGE if t>=warn else GREEN
+                c.create_text(lx,ly,text=str(t),fill=lbl_col,font=("Courier",7,"bold"))
+            c.create_arc(cx-r,cy-r,cx+r,cy+r,start=210,extent=-240,style="arc",outline=PURPLE_DIM,width=16)
+            pct=min(max((temp-MIN_TEMP)/span,0),1); sweep=-240*pct
+            color=GREEN if temp<warn else ORANGE if temp<=crit else RED
+            if abs(sweep)>0.5: c.create_arc(cx-r,cy-r,cx+r,cy+r,start=210,extent=sweep,style="arc",outline=color,width=16)
+            ar=math.radians(210-240*pct)
+            c.create_line(cx,cy,cx+(r-10)*math.cos(ar),cy-(r-10)*math.sin(ar),fill=GOLD_BRIGHT,width=3)
+            c.create_oval(cx-5,cy-5,cx+5,cy+5,fill=GOLD,outline="")
+            c.create_text(cx,cy+18,text=str(round(temp,1))+" C",font=("Courier",14,"bold"),fill=color)
 
     def _draw_bars(self, c=None, _anim_phase=0):
         try:
@@ -1214,9 +1269,11 @@ class RavenMinerDash:
         if new_shares>self.last_shares: self.root.after(0,self._trigger_valknut_flash)
         self.last_shares=new_shares
         temp=(d.get("temp") or 0)
-        self.lbl_asic_temp.config(text=str(round(temp,1))+" C",fg=GREEN if temp<55 else ORANGE if temp<70 else RED)
+        self._draw_gauge(self.gauge_canvas, temp, ORANGE, warn=55, crit=70)
+        # lbl_asic_temp removed — data now fed to ASIC gauge
         vr_temp=(d.get("vrTemp") or 0)
-        self.lbl_vr_temp.config(text=str(round(vr_temp,1))+" C",fg=GREEN if vr_temp<50 else ORANGE if vr_temp<65 else RED)
+        self._draw_gauge(self.vr_gauge_canvas, vr_temp, CYAN, warn=50, crit=65)
+        # lbl_vr_temp removed — data now fed to VR gauge
         self.lbl_overheat.config(text=str(d.get("overheat_temp","--"))+" C")
         self.lbl_target_temp.config(text=str(d.get("pidTargetTemp","--"))+" C")
         self._draw_gauge(self.gauge_canvas, temp, ORANGE, warn=55, crit=70)
@@ -1252,6 +1309,7 @@ class RavenMinerDash:
         _vlt=round((d.get("voltage") or 0)/1000,2)
         _vlt_fg=(RED if _vlt<11.99 else ORANGE if _vlt<12.0 else GREEN if _vlt<12.8 else ORANGE if _vlt<13.1 else RED)
         self.lbl_voltage.config(text=str(_vlt)+" V",fg=_vlt_fg)
+        self._draw_gauge(self.volt_gauge_canvas, _vlt, GREEN, warn=11.9, crit=11.5, lo=10.0, hi=13.5, voltage_mode=True)
         self.lbl_freq.config(text=str(d.get("frequency","--"))+" MHz")
         self.lbl_vcore.config(text=str(d.get("coreVoltageActual","--"))+" mV")
         fan=(d.get("fanspeed") or 0)
@@ -1268,7 +1326,7 @@ class RavenMinerDash:
             text="Updated: "+time.strftime("%H:%M:%S")+"  |  "+d.get("ssid","")+"  |  Blocks: "+str(new_blocks),fg=GOLD)
         try:         self.lbl_refresh_stat.config(text=str(REFRESH)+" s")
         except Exception: pass
-        try: self.lbl_hr_refresh_stat.config(text=str(HR_REFRESH)+" s")
+        try: getattr(self,"lbl_hr_refresh_stat",None) and self.lbl_hr_refresh_stat.config(text=str(HR_REFRESH)+" s")
         except Exception: pass
         # v3.9.3: cached alert config — no disk I/O every tick
         if _alert_cfg_global_cache is None:
@@ -1327,7 +1385,7 @@ class RavenMinerDash:
             self.hr_refresh_var.set(str(HR_REFRESH))
             # sync left-panel stat label immediately
             try:
-                self.lbl_hr_refresh_stat.config(text=str(HR_REFRESH)+" s")
+                getattr(self,"lbl_hr_refresh_stat",None) and self.lbl_hr_refresh_stat.config(text=str(HR_REFRESH)+" s")
             except Exception:
                 pass
             # reset draw timer so graph refreshes at once with the new rate
