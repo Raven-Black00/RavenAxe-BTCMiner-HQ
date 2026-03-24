@@ -362,6 +362,7 @@ class RavenMinerDash:
         self.valk_flash = True
         self.valk_step  = 0
         self._valknut_next_frame()
+        self.root.after(0, self._flash_ravens)  # v3.9.3: ravens brighten on share
 
     def _valknut_next_frame(self):
         if self.valk_step < len(self.valk_frames):
@@ -395,10 +396,10 @@ class RavenMinerDash:
             # Mirror both ravens horizontally
             rl = rl.transpose(Image.FLIP_LEFT_RIGHT)
             rr = rr.transpose(Image.FLIP_LEFT_RIGHT)
-            # Match Vegvisir watermark opacity (0.35)
+            # v3.9.3: use natural alpha — no opacity reduction, background is transparent
             for _img in (rl, rr):
                 _r, _g, _b, _a = _img.split()
-                _a = _a.point(lambda p: int(p * 0.35))
+                _a = _a.point(lambda p: int(p * 0.82))  # slight softness, fully see-through bg
                 _img.putalpha(_a)
             x_margin = raven_size // 2 + 10
             y_pos    = raven_size // 2 + 52  # just below the section title banner (~40-50 px)
@@ -411,6 +412,73 @@ class RavenMinerDash:
             canvas.tag_raise("vegvisir_img")
         except Exception as e:
             print("Raven draw error:", e)
+
+    def _flash_ravens(self, step=0, steps=12):
+        """v3.9.3: Blaze ravens blazing gold-white on share accepted — much brighter."""
+        if not PIL_OK or not hasattr(self, 'veg_canvas'):
+            return
+        canvas = self.veg_canvas
+        pw = canvas.winfo_width()
+        ph = canvas.winfo_height()
+        if pw < 10 or ph < 10:
+            return
+        global _RAVEN_L_PIL_CACHE, _RAVEN_R_PIL_CACHE
+        try:
+            if _RAVEN_L_PIL_CACHE is None or _RAVEN_R_PIL_CACHE is None:
+                return
+            raven_size = int(min(pw, ph) * 0.19)  # v3.9.3: same size as normal
+            if raven_size < 40:
+                return
+            # v3.9.3: 50% reduced brightness — ease curve capped at 0.675 peak
+            PEAK_BRIGHTNESS = 0.675  # halfway between rest(0.35) and full(1.0)
+            peak = steps // 3
+            if step <= peak:
+                t = step / max(peak, 1)
+                brightness = 0.35 + (PEAK_BRIGHTNESS - 0.35) * (t * t * (3 - 2 * t))
+            else:
+                t = (step - peak) / max(steps - 1 - peak, 1)
+                brightness = PEAK_BRIGHTNESS - (PEAK_BRIGHTNESS - 0.35) * (t * t)
+            brightness = max(0.35, min(PEAK_BRIGHTNESS, brightness))
+
+            # Gold glow intensity — peaks at 90 (50% of original 180)
+            glow = int((brightness - 0.35) / (PEAK_BRIGHTNESS - 0.35) * 90)
+
+            _rkey = (raven_size, "flash")
+            if not hasattr(self, "_raven_flash_base") or self._raven_flash_base[0] != _rkey:
+                _rl = _RAVEN_L_PIL_CACHE.resize((raven_size, raven_size), Image.LANCZOS).transpose(Image.FLIP_LEFT_RIGHT)
+                _rr = _RAVEN_R_PIL_CACHE.resize((raven_size, raven_size), Image.LANCZOS).transpose(Image.FLIP_LEFT_RIGHT)
+                self._raven_flash_base = (_rkey, _rl, _rr)
+            rl = self._raven_flash_base[1].copy()
+            rr = self._raven_flash_base[2].copy()
+
+            flash_imgs = []
+            for _img in (rl, rr):
+                _r, _g, _b, _a = _img.split()
+                # Blazing gold-white: red full, green ~80%, blue moderate
+                _r = _r.point(lambda p: min(255, int(p * brightness) + glow))
+                _g = _g.point(lambda p: min(255, int(p * brightness) + int(glow * 0.78)))
+                _b = _b.point(lambda p: min(255, int(p * brightness) + int(glow * 0.30)))
+                # Alpha: fully opaque at peak — ravens fully visible
+                _a = _a.point(lambda p: min(255, int(p * 2.5 * brightness + glow * 0.4)))
+                flash_imgs.append(Image.merge("RGBA", (_r, _g, _b, _a)))
+
+            x_margin = raven_size // 2 + 10
+            y_pos    = raven_size // 2 + 52
+            canvas.delete("ravens")
+            self._raven_flash_l = ImageTk.PhotoImage(flash_imgs[0])
+            self._raven_flash_r = ImageTk.PhotoImage(flash_imgs[1])
+            canvas.create_image(x_margin,      y_pos, image=self._raven_flash_l, anchor="center", tags="ravens")
+            canvas.create_image(pw - x_margin, y_pos, image=self._raven_flash_r, anchor="center", tags="ravens")
+            canvas.tag_lower("ravens")
+            canvas.tag_raise("vegvisir_img")
+
+            if step < steps - 1:
+                self.root.after(45, lambda: self._flash_ravens(step + 1, steps))
+            else:
+                self._draw_raven_pair(self.veg_canvas, self.veg_canvas.winfo_width(), self.veg_canvas.winfo_height())  # restore normal
+        except Exception as e:
+            print("Raven flash error:", e)
+
 
     def _draw_vegvisir_centre(self, parent):
         global _VEGVISIR_PIL_CACHE
@@ -763,20 +831,26 @@ class RavenMinerDash:
         c.create_oval(cx-5,cy-5,cx+5,cy+5,fill=GOLD,outline="")
         c.create_text(cx,cy+18,text=str(round(temp,1))+" C",font=("Courier",14,"bold"),fill=color)
 
-    def _draw_bars(self, c=None):
-        if c is None:
-            c = self.bar_canvas
-        c.update_idletasks()
-        w = c.winfo_width()
-        h = c.winfo_height()
-        c.delete("all")
-        if h < 10:
-            h = 110
-        if not self.hr_history:
+    def _draw_bars(self, c=None, _anim_phase=0):
+        try:
+            if c is None:
+                c = self.bar_canvas
+            c.update_idletasks()
+            w = c.winfo_width()
+            h = c.winfo_height()
+            c.delete("all")
+            if h < 10:
+                h = 110
+            if not self.hr_history:
+                return
+        except Exception:
             return
+        # v3.9.3: collect line points for smooth curve
+        _line_pts   = []   # (x_mid, y, color) per sub-bar
+        # _drop_pts removed — perf fix
 
         import math
-        # Use up to 40 logical datapoints, each expanded into 16 sub-bars (40 groups x 16)
+
         max_points = 40
         points = list(self.hr_history)[-max_points:]
         n = len(points)
@@ -786,64 +860,137 @@ class RavenMinerDash:
         mx = max(points) or 1
         mn = min(points) or 0
 
+        # v3.9.3: anchor floor/ceiling to show all colour bands
+        data_range = max(mx - mn, 0.05)
+        floor   = min(mn - data_range * 0.1, 5.8)
+        ceiling = max(mx + data_range * 0.1, 6.6)
+
         slot = max(1, w // (n * 16))
-        bw = max(1, slot // 2)
-        seg_h = 5
+        bw   = max(1, slot - 1)
+        seg_h   = 5
         seg_gap = 2
         seg_unit = seg_h + seg_gap
 
-        HR_LOW_THRESHOLD = 6.4  # v3.9.3
-        def seg_color(frac, is_top=False, is_low=False):
-            if is_low:
-                r=int(min(255,180+frac*(255-180))); g=int(max(0,40-frac*40))
-                return f"#{r:02x}{g:02x}00"
-            if is_top:
-                return "#00ff88"
-            r = int(min(255, 140 + frac * (255 - 140)))
-            g = int(min(255, 80  + frac * (60  - 80)))
-            b = 255
-            return f"#{r:02x}{g:02x}{b:02x}"
+        HR_LOW_THRESHOLD = 6.4
 
-        # math already imported at module level
-        # Tight normalization: zoom into actual data range for max visual variation
-        data_range = max(mx - mn, 0.05)  # minimum 0.05 TH/s range
-        floor = mn - data_range * 0.1
-        ceiling = mx + data_range * 0.1
+        # ── Animated pulse: a bright shimmer wave sweeps left→right ──
+        wave_speed = 8          # sub-bars per animation phase step
+        wave_width = 30         # width of the shimmer in sub-bars
+        wave_pos   = (_anim_phase * wave_speed) % (n * 16 + wave_width)
+
+        def _hr_band(v):
+            if v >= 6.5:   return "gold"
+            elif v >= 6.4: return "green"
+            elif v >= 6.3: return "violet"
+            elif v >= 6.0: return "blue"
+            else:          return "red"
+
+        BAND_COLOURS = {
+            "gold"  : (255, 231, 45),
+            "green" : (50,  221, 57),
+            "violet": (211, 50,  231),
+            "blue"  : (40,  175, 255),
+            "red"   : (231, 10,  0),
+        }
+
+        def _brighten(r, g, b, amt):
+            """Boost RGB toward white by amt (0.0–1.0)."""
+            return (
+                int(min(255, r + (255 - r) * amt)),
+                int(min(255, g + (255 - g) * amt)),
+                int(min(255, b + (255 - b) * amt)),
+            )
 
         def norm_val(v, idx=0):
-            base = max(0.0, min(1.0, (v - floor) / max(ceiling - floor, 0.001)))
-            # Power curve: stretches differences in the mid-range
+            base   = max(0.0, min(1.0, (v - floor) / max(ceiling - floor, 0.001)))
             curved = base ** 0.6
-            # Subtle deterministic jitter per bar index (+/- 4% of max_segs)
-            jitter = math.sin(idx * 2.3 + v * 17.1) * 0.04
-            return max(0.05, min(1.0, curved + jitter))
+            jitter = math.sin(idx * 2.399) * 0.04
+            return max(0.0, min(1.0, curved + jitter))
 
-        usable_h = h - 4
-        max_segs = max(1, usable_h // seg_unit)
+        max_segs = max(1, h // seg_unit)
+        usable_h = max_segs * seg_unit
 
         for i, val in enumerate(points):
             cur_norm = norm_val(val, i)
             next_val = points[i + 1] if i + 1 < n else val
-            nxt_norm = norm_val(next_val, i+1)
-            high_hr=val>=6.5; next_high_hr=next_val>=6.5
-            low_hr=val<HR_LOW_THRESHOLD; next_low_hr=next_val<HR_LOW_THRESHOLD  # v3.9.3
+            nxt_norm = norm_val(next_val, i + 1)
+
+            def _hr_band_v(v):
+                if v >= 6.5:   return "gold"
+                elif v >= 6.4: return "green"
+                elif v >= 6.3: return "violet"
+                elif v >= 6.0: return "blue"
+                else:          return "red"
+
+            hr_band      = _hr_band_v(val)
+            next_hr_band = _hr_band_v(next_val)
+
             for sub in range(16):
-                t = sub / 16.0
-                ease = t * t * (3 - 2 * t)
+                t      = sub / 16.0
+                ease   = t * t * (3 - 2 * t)
                 interp_norm = cur_norm + (nxt_norm - cur_norm) * ease
-                bar_high_hr = high_hr if t < 0.5 else next_high_hr
                 x0 = (i * 16 + sub) * slot
                 x1 = x0 + bw
                 n_segs = max(1, int(interp_norm * max_segs))
-                for s in range(n_segs):
-                    y_bot = h - 2 - s * seg_unit
-                    y_top = y_bot - seg_h
-                    frac = s / max(max_segs - 1, 1)
-                    bar_low_hr=low_hr if t<0.5 else next_low_hr  # v3.9.3
-                    is_top = bar_high_hr and (s == n_segs - 1)
-                    color = seg_color(frac, is_top=is_top, is_low=bar_low_hr)
-                    stipple = "gray50" if not is_top else "gray75"
-                    c.create_rectangle(x0, y_top, x1, y_bot, fill=color, outline="", stipple=stipple)
+
+                bar_band = hr_band if t < 0.5 else next_hr_band
+                br, bg, bb = (int(x) for x in BAND_COLOURS[bar_band])
+
+                # ── shimmer wave: how much to brighten this sub-bar ──
+                sub_idx = i * 16 + sub
+                dist = abs(sub_idx - wave_pos)
+                if dist < wave_width:
+                    shimmer = (1.0 - dist / wave_width) * 0.55
+                    br, bg, bb = _brighten(br, bg, bb, shimmer)
+                br = int(br); bg = int(bg); bb = int(bb)  # v3.9.3: force int
+
+                bar_color = f"#{br:02x}{bg:02x}{bb:02x}"
+
+                # draw bar body
+                if bw > 0 and n_segs > 0:
+                    bar_top = h - 2 - n_segs * seg_unit
+                    c.create_rectangle(x0, bar_top, x1, h - 2,
+                                       fill=bar_color, outline="")
+                # collect top-line point for smooth curve
+                line_y = h - 2 - n_segs * seg_unit  # v3.9.3: line at very top of bar
+                tr, tg, tb = (int(x) for x in _brighten(br, bg, bb, 0.45))
+                x_mid = x0 + (x1 - x0) // 2
+                _line_pts.append((x_mid, line_y, f"#{tr:02x}{tg:02x}{tb:02x}"))
+
+        # ── Schedule next animation frame ──
+        # v3.9.3: draw smooth curved line connecting all data points
+        if len(_line_pts) >= 2:
+            # drop lines removed — v3.9.3 perf fix
+            # draw smooth line — collect all x,y coords then one polyline per colour band
+            pts_flat = []
+            for xm, ly, col in _line_pts:
+                pts_flat += [xm, ly]
+            if len(pts_flat) >= 4:
+                c.create_line(pts_flat, fill=_line_pts[len(_line_pts)//2][2],
+                              width=2, smooth=True, capstyle="round", joinstyle="round")
+            # bright dot at each actual data point
+            for xm, ly, col in _line_pts[::16]:  # every 16 subs = 1 data point
+                c.create_oval(xm-2, ly-2, xm+2, ly+2, fill=col, outline="")
+
+        # v3.9.3: self-scheduling animation — guarded against KeyboardInterrupt
+        if hasattr(self, "bar_canvas"):
+            try:
+                if not self.bar_canvas.winfo_exists():
+                    return
+            except Exception:
+                return
+            if _anim_phase == 0 and hasattr(self, "_bar_anim_id") and self._bar_anim_id:
+                try: self.root.after_cancel(self._bar_anim_id)
+                except Exception: pass
+            def _next_frame(ph=_anim_phase + 1):
+                try:
+                    self._draw_bars(self.bar_canvas, ph)
+                except (KeyboardInterrupt, SystemExit):
+                    raise
+                except Exception as _e:
+                    print(f"Graph anim error: {_e}")
+            self._bar_anim_id = self.root.after(80, _next_frame)  # v3.9.3: 80ms perf
+
 
     def _draw_countdown_bar(self,elapsed,total):
         c=self.cdown_canvas; c.update_idletasks(); w=c.winfo_width(); c.delete("all")
@@ -871,7 +1018,7 @@ class RavenMinerDash:
             int(v*0.70),
             255))
         except Exception: pass
-        self.root.after(35,self._glow_loop)
+        self.root.after(55,self._glow_loop)  # v3.9.3: perf
 
     def _trigger_block_flash(self):
         self.flash_frame.place(relx=0,rely=0,relwidth=1,relheight=1)
@@ -1036,14 +1183,17 @@ class RavenMinerDash:
     def refresh_loop(self):
         self.fetch_btc()  # initial fetch on startup
         while True:
-            ok=self.fetch_miner()
-            self._btc_counter+=1
-            if self._btc_counter >= max(1, int(60/max(REFRESH,0.1))):
-                self.fetch_btc()
-                self._btc_counter=0
-            if ok and not getattr(self, '_update_pending', False):
-                self._update_pending = True
-                self.root.after(0, self._dispatch_update)
+            try:  # v3.9.3: guard — unhandled exception must not silently kill polling
+                ok=self.fetch_miner()
+                self._btc_counter+=1
+                if self._btc_counter >= max(1, int(60/max(REFRESH,0.1))):
+                    self.fetch_btc()
+                    self._btc_counter=0
+                if ok and not getattr(self, '_update_pending', False):
+                    self._update_pending = True
+                    self.root.after(50, self._dispatch_update)  # v3.9.3: breathing room
+            except Exception as _loop_ex:
+                print(f"refresh_loop error (non-fatal): {_loop_ex}")
             time.sleep(max(REFRESH, 0.1))
 
     def start_refresh(self): threading.Thread(target=self.refresh_loop,daemon=True).start()
@@ -1080,7 +1230,9 @@ class RavenMinerDash:
         self.hr_history.append(hr)
         self._last_data_time = time.time()
         if not hasattr(self, "_last_hr_draw") or time.time() - self._last_hr_draw >= HR_REFRESH:
-            self._draw_bars()
+            # kick-start graph animation if not already running
+            if not getattr(self, "_bar_anim_id", None):
+                self._draw_bars()
             self._last_hr_draw = time.time()
         acc=d.get("sharesAccepted",0); rej=d.get("sharesRejected",0)
         self.lbl_acc.config(text=str(acc))

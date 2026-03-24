@@ -4,7 +4,7 @@
   ██████╗  █████╗ ██╗   ██╗███████╗███╗   ██╗███╗   ███╗██╗███╗   ██╗███████╗██████╗
   ██╔══██╗██╔══██╗██║   ██║██╔════╝████╗  ██║████╗ ████║██║████╗  ██║██╔════╝██╔══██╗
   ██████╔╝███████║██║   ██║█████╗  ██╔██╗ ██║██╔████╔██║██║██╔██╗ ██║█████╗  ██████╔╝
-  ██╔══██╗██╔══██║╚██╗ ██╔╝██╔══╝  ██║╚██╗██║██║╚██╔╝██║██║██║╚██╗██║██╔══╝  ██╔══██╗
+  ██╔══██╗██╔══██╗╚██╗ ██╔╝██╔══╝  ██║╚██╗██║██║╚██╔╝██║██║██║╚██╗██║██╔══╝  ██╔══██╗
   ██║  ██║██║  ██║ ╚████╔╝ ███████╗██║ ╚████║██║ ╚═╝ ██║██║██║ ╚████║███████╗██║  ██║
   ╚═╝  ╚═╝╚═╝  ╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═══╝╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝
                               H  Q   —   v 3 . 9 . 3
@@ -30,71 +30,47 @@ gold-on-purple aesthetics drawn from the Elder Futhark and Slavic symbolism.
 
 ### ᛏ Real-Time Monitoring
 - **Hashrate** — live TH/s with animated electric-blue pulse glow
-- **Hashrate History Graph** — 40×16 animated sub-bar chart; bars below 6.4 TH/s turn red
-- **ASIC & VR Temperature** — gauge arcs with colour-coded needle (green/orange/red)
-- **Power** — colour thresholds: green 0–119W · orange 120–129W · red 130W+
-- **Input Current** — green 0–9.9A · orange 10–11.9A · red 12A+
-- **Voltage** — red <12V · orange 11.99V · green 12–12.8V · orange 12.8–13.1V · red 13.1V+
+- **Hashrate History Graph** — 40-bar animated chart; bars below 6.4 TH/s turn red
+- **ASIC & VR Temperature** — gauge arcs with colour-coded needle (green / orange / red)
+- **Power** — Green 0–119W · Orange 120–129W · Red 130W+
+- **Input Current** — Green 0–9.9A · Orange 10–11.9A · Red 12A+
+- **Voltage** — Red <12V · Orange 11.99–12V · Green 12–12.8V · Orange >12.8V warning
 - **Fan Speed & RPM** — colour-coded
-- **WiFi RSSI** — signal strength with colour coding
-- **Shares OK / BAD / Best Diff** — large font, bright display with rejection % in red
-- **BTC Price** — live via CoinGecko API (updates every ~60s)
+- **WiFi RSSI** — signal strength colour coding
+- **Shares OK / BAD / Best Diff** — large 22pt bold font with rejection % label
+- **BTC Price** — live via CoinGecko API (~60s updates)
 - **Pool & Uptime** — gold pulsing labels
 - **Next Block Countdown** — animated progress bar
 
 ### ᚠ Alerts (Discord Webhooks)
-- ASIC overheat alert
-- VR overheat alert
+- ASIC & VR overheat alert
 - Low hashrate alert
 - Block found notification
 - Miner offline (3 consecutive failed polls)
-- 60-second cooldown per alert type — no flooding
+- **60-second cooldown** per alert type — no flooding
 
 ### ᚢ UI & Aesthetics
-- **Vegvisir** watermark background (animated, centre panel)
-- **Valknut** animated flash on each new accepted share
-- **Huginn & Muninn** raven pair flanking the watermark
-- **Block Found** full-screen flash with Norse rune overlay and audio beep
-- **◉ LIVE / ◉ OFFLINE** pulsing indicator in bottom bar
+- **Vegvisir** animated watermark (centre panel)
+- **Valknut** flash animation on each new accepted share
+- **Huginn & Muninn** ravens — brighten with warm gold shimmer on every share
+- **Block Found** full-screen flash with Norse rune overlay + audio beep
+- **◉ LIVE / ◉ OFFLINE** pulsing indicator (bottom bar)
 - **Light / Dark** theme toggle
-- **System tray** icon with show/hide/quit (pystray)
-- **Source Code Viewer** — built-in syntax-highlighted code browser with live search
+- **System tray** icon — show / hide / quit (pystray)
+- **Source Code Viewer** — built-in syntax-highlighted browser with live search
 - **Hi-res 3D gear** settings button with golden glow ring on hover
 
 ### ⚙ Settings & Control
-- Miner IP configuration (saved to JSON)
+- Miner IP (saved to JSON, persists across restarts)
 - Thermal limits, target temp, fan control, frequency, core voltage
-- Discord webhook URL + alert thresholds
+- Discord webhook URL + per-alert thresholds
 - Reboot slider guard (2-second hold to confirm)
 - Adjustable refresh rate (0.5s – 60s)
 - Adjustable graph refresh rate
 
 ---
 
-## ᚱ Screenshot
-
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│  ᚱᚨᚡᛖᚾ  Huginn · Muninn · Thought · Memory         12:34:56  v3.9.3│
-├──────────────────────────────────────────────────────────────────────┤
-│  TEMP ᚦ    │      ᚺᚨᛊᚺᚱᚨᛏᛖ       │    ᚨᚠᚺ POWER HARDWARE         │
-│  ASIC  65°C│                       │  POWER       115.0 W           │
-│  VR    48°C│    ◉ LIVE             │  CURRENT       9.80 A          │
-│  [gauge]   │   6.520  TH/s         │  VOLTAGE      12.24 V          │
-│            │                       │  FREQUENCY   600 MHz           │
-│  VR GAUGE  │  [hashrate bar graph] │  FAN SPEED      75%            │
-│            │                       │  BTC PRICE  $87,420            │
-│            │  SHARES OK │BAD│DIFF  │                                │
-│            │    14,820  │  3 │ 45G  │        ⚙ (gear button)        │
-└────────────┴───────────────────────┴────────────────────────────────┘
-│ NEXT BLOCK ESTIMATE  [████████████░░░░░░░░]  7m 32s                  │
-│ ◉ LIVE  TEST FLASH  </> CODE       Refresh: 0.25s   Graph: 5.0s     │
-└──────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## ᛉ Quick Start
+## ᚱ Quick Start
 
 ```bash
 pip install -r requirements.txt
@@ -102,7 +78,7 @@ python Ravenminer_HQ_3.9.3.py
 ```
 
 See **[INSTALL.md](INSTALL.md)** for full setup, `.exe` build instructions,
-Discord alerts, and troubleshooting.
+Discord alert configuration, and troubleshooting.
 
 ---
 
@@ -112,16 +88,16 @@ Discord alerts, and troubleshooting.
 RavenMiner_HQ_v3.9.3_RELEASE/
 │
 ├── Ravenminer_HQ_3.9.3.py         ← Main program (run this)
-├── RavenMiner_BUILD_3.9.3.bat     ← Build to .exe (Windows, Norse-themed)
-├── requirements.txt               ← Python dependencies
+├── RavenMiner_BUILD_3.9.3.bat     ← Build to .exe (Windows, Norse-themed forge)
+├── requirements.txt               ← Python runtime dependencies
 ├── README.md                      ← This file
-├── INSTALL.md                     ← Full installation & config guide
-├── CHANGELOG.md                   ← Full version history
+├── INSTALL.md                     ← Full installation & configuration guide
+├── CHANGELOG.md                   ← Complete version history
 │
 ├── src/
-│   └── Ravenminer_HQ_3.9.3.py    ← Source copy
+│   └── Ravenminer_HQ_3.9.3.py    ← Source copy (used by PyInstaller)
 │
-└── (auto-created at runtime)
+└── (auto-created at first run)
     ├── ravenminer_config.json     ← Miner IP + theme preference
     └── ravenminer_alerts.json     ← Discord webhook + alert thresholds
 ```
@@ -130,22 +106,20 @@ RavenMiner_HQ_v3.9.3_RELEASE/
 
 ## ᚲ Dependencies
 
-| Package | Purpose |
-|---------|---------|
-| `requests` | Miner API polling + Discord webhooks + BTC price |
-| `Pillow` | Vegvisir, Valknut, Raven images + gear bg removal |
-| `pystray` | System tray icon (optional — gracefully disabled if absent) |
-| `tkinter` | GUI framework (Python standard library) |
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `requests` | ≥2.28 | Miner API · Discord webhooks · BTC price |
+| `Pillow` | ≥9.0 | Vegvisir · Valknut · Ravens · Gear image |
+| `pystray` | ≥0.19 | System tray icon (optional — graceful fallback) |
+| `tkinter` | built-in | GUI framework |
 
 ---
 
 ## ᚺ Miner Compatibility
 
-Tested with:
-- **AvalonMiner A14** series
-- **RavenMiner** firmware
+Tested with **AvalonMiner A14** series running **RavenMiner** firmware.
 
-API endpoint: `http://<MINER_IP>/api/system/info`
+API endpoint polled: `http://<MINER_IP>/api/system/info`
 
 ---
 
@@ -158,11 +132,11 @@ API endpoint: `http://<MINER_IP>/api/system/info`
 > [png image from pngtree.com](https://pngtree.com/freepng/3d-of-coins-gear-make-people-finish-work-concept_18202979.html)
 > Used under the pngtree free license. All rights remain with the original creator.
 
-**Norse/Slavic symbolism:**
-- Vegvisir — Old Norse compass rune, guide through storms
-- Valknut — Symbol of Odin, the knot of the slain
-- Elder Futhark runes — ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟ
-- Huginn & Muninn — Odin's ravens, Thought and Memory
+**Norse / Slavic symbolism:**
+- **Vegvisir** — Old Norse compass rune, the Wayfinder through storms
+- **Valknut** — The knot of the slain, symbol of Odin
+- **Elder Futhark** — ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟ
+- **Huginn & Muninn** — Odin's ravens, Thought and Memory
 
 ---
 
@@ -171,5 +145,7 @@ API endpoint: `http://<MINER_IP>/api/system/info`
 MIT License — free to use, modify, and distribute.
 Attribution appreciated but not required.
 
+---
+
 *May your difficulty be low and your uptime eternal.*
-*ᚱᚨᚡᛖᚾᛗᛁᚾᛖᚱ ᚺᚲ — The ravens watch.*
+*ᚱᚨᚡᛖᚾᛗᛁᚾᛖᚱ ᚺᚲ — The ravens watch.* 🐦‍⬛🐦‍⬛
