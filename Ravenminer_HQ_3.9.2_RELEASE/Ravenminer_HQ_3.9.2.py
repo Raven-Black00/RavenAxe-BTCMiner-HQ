@@ -77,11 +77,24 @@ def save_alert_config(cfg):
             json.dump(cfg, f, indent=2)
     except Exception as e:
         print("Alert config save error:", e)
+    # v3.9.3: invalidate the per-dash cache so it reloads on next tick
+    global _alert_cfg_global_cache
+    _alert_cfg_global_cache = None
+
+_alert_cfg_global_cache = None
+
+_discord_last_sent = {}   # v3.9.3: per-title cooldown tracking
+_DISCORD_COOLDOWN = 60    # minimum seconds between identical alert titles
 
 def send_discord_alert(webhook_url, title, message, color=0xff3030):
     if not webhook_url:
         return
     import time as _t2
+    # v3.9.3: cooldown guard — prevents alert flooding under rapid error conditions
+    now = _t2.time()
+    if now - _discord_last_sent.get(title, 0) < _DISCORD_COOLDOWN:
+        return
+    _discord_last_sent[title] = now
     payload = {"embeds": [{"title": title, "description": message, "color": color,
         "footer": {"text": "RavenMiner HQ " + VERSION + " • " + _t2.strftime("%H:%M:%S")}}]}
     def _post():
@@ -95,7 +108,7 @@ def send_discord_alert(webhook_url, title, message, color=0xff3030):
 API_URL  = "http://" + MINER_IP + "/api/system/info"
 REFRESH  = 0.25
 HR_REFRESH = 5.0
-VERSION = "v3.9.2"
+VERSION = "v3.9.3"
 
 BG          = "#080810"
 COL_L       = "#0e0e1a"
@@ -170,7 +183,7 @@ def fmt_uptime(s):
         h, r = divmod(td.seconds, 3600)
         m, sc = divmod(r, 60)
         return str(td.days)+"d "+str(h).zfill(2)+"h "+str(m).zfill(2)+"m "+str(sc).zfill(2)+"s"
-    except: return str(s)
+    except Exception: return str(s)
 
 def fmt_diff(d):
     try:
@@ -180,7 +193,7 @@ def fmt_diff(d):
         if d>=1e6:  return str(round(d/1e6, 2))+" M"
         if d>=1e3:  return str(round(d/1e3, 2))+" K"
         return str(int(d))
-    except: return str(d)
+    except Exception: return str(d)
 
 def draw_vegvisir(canvas, cx, cy, r, color):
     canvas.delete("vegvisir")
@@ -275,6 +288,8 @@ class RavenMinerDash:
         self._offline_count   = 0
         self._last_rej        = 0
         self.glow_step=80;self.glow_dir=1;self.block_start=time.time()
+        self._is_online=False  # v3.9.3: explicit init
+        self._live_alpha=0; self._live_dir=1  # v3.9.3: explicit init
         self.tray_icon=None
         self.valk_flash=False;self.valk_step=0
         self.valk_frames=[]
@@ -508,8 +523,17 @@ class RavenMinerDash:
         hr_refresh_entry.bind("<Return>",self._apply_hr_refresh)
         refresh_entry.bind("<FocusOut>",self._apply_refresh)
         tk.Label(bottom,text="REFRESH s:",font=("Courier",9),fg=GOLD,bg="#0a0018").pack(side="right",padx=(0,0))
-        tk.Button(bottom,text="TEST FLASH",font=("Courier",9),bg=PURPLE_DIM,fg=GOLD_BRIGHT,
-                  activebackground=PURPLE,command=self._trigger_valknut_flash).pack(side="right",padx=6,pady=10)
+        # v3.9.3: LIVE indicator stacked above TEST FLASH button
+        _live_stack=tk.Frame(bottom,bg="#0a0018")
+        _live_stack.pack(side="right",padx=6,pady=2)
+        # create lbl_live HERE as direct child of _live_stack — avoids TclError
+        self.lbl_live=tk.Label(_live_stack,text="◉ LIVE",font=("Courier",10,"bold"),fg=GOLD,bg="#0a0018")
+        self.lbl_live.pack(side="top",pady=(2,0))
+        tk.Button(_live_stack,text="TEST FLASH",font=("Courier",9),bg=PURPLE_DIM,fg=GOLD_BRIGHT,
+                  activebackground=PURPLE,command=self._trigger_valknut_flash).pack(side="top",fill="x",pady=(1,0))
+        tk.Button(_live_stack,text="</> CODE",font=("Courier",9),bg="#0a0018",fg=CYAN,
+                  activebackground=PURPLE_DIM,relief="flat",cursor="hand2",
+                  command=lambda: CodeViewerWindow(self.root)).pack(side="top",fill="x",pady=(1,2))
         self.lbl_status=tk.Label(bottom,text="Connecting...",font=("Courier",10),fg=GOLD,bg="#0a0018",anchor="w")
         self.lbl_status.pack(side="left",fill="x",expand=True,padx=10,pady=4)
         self.lbl_version=tk.Label(bottom,text="",font=("Courier",10),fg=GOLD,bg="#0a0018")
@@ -548,8 +572,7 @@ class RavenMinerDash:
         self.valk_canvas=Canvas(p,width=220,height=220,bg=COL_C,highlightthickness=0)
         self.valk_canvas.pack(pady=(4,0))
         self.valk_canvas.valk_photo=None
-        self.lbl_live=tk.Label(p,text="◉ LIVE",font=("Courier",22,"bold"),fg=GOLD,bg=COL_C)
-        self.lbl_live.pack()
+        # v3.9.3: lbl_live is created in build() directly inside _live_stack
         self._live_pulse_id  = None
         self._gold_pulse_id  = None
         self.lbl_hashrate=tk.Label(p,text="--",font=("Courier",56,"bold"),fg=PURPLE_GLOW,bg=COL_C)
@@ -573,8 +596,11 @@ class RavenMinerDash:
             f=tk.Frame(shares_row,bg=PURPLE_DIM); f.grid(row=0,column=col,padx=6,sticky="nsew")
             shares_row.columnconfigure(col,weight=1)
             tk.Label(f,text=label,font=("Courier",10),fg=GOLD,bg=PURPLE_DIM).pack(pady=(4,0))
-            lbl=tk.Label(f,text="--",font=("Courier",16,"bold"),fg=fg,bg=PURPLE_DIM); lbl.pack(pady=(0,4))
+            lbl=tk.Label(f,text="--",font=("Courier",16,"bold"),fg=fg,bg=PURPLE_DIM); lbl.pack(pady=(0,2))
             setattr(self,attr,lbl)
+            if attr=="lbl_rej":  # v3.9.3: rejection % label beside bad share count
+                self.lbl_rej_pct=tk.Label(f,text="0.00 %",font=("Courier",10,"bold"),fg=RED,bg=PURPLE_DIM)
+                self.lbl_rej_pct.pack(pady=(0,4))
         # Pool & Uptime — same line, gold pulsing, sits above next-block bar
         self._divider(p)
         pu_row = tk.Frame(p, bg=COL_C)
@@ -715,7 +741,12 @@ class RavenMinerDash:
         seg_gap = 2
         seg_unit = seg_h + seg_gap
 
-        def seg_color(frac, is_top=False):
+        HR_LOW_THRESHOLD = 6.4  # v3.9.3: bars below this TH/s rendered red
+        def seg_color(frac, is_top=False, is_low=False):
+            if is_low:  # v3.9.3: below-threshold bars — red spectrum
+                r = int(min(255, 180 + frac * (255 - 180)))
+                g = int(max(0,   40  - frac * 40))
+                return f"#{r:02x}{g:02x}00"
             if is_top:
                 return "#00ff88"
             r = int(min(255, 140 + frac * (255 - 140)))
@@ -744,13 +775,16 @@ class RavenMinerDash:
             cur_norm = norm_val(val, i)
             next_val = points[i + 1] if i + 1 < n else val
             nxt_norm = norm_val(next_val, i+1)
-            high_hr = val >= 6.5
+            high_hr      = val      >= 6.5
             next_high_hr = next_val >= 6.5
+            low_hr       = val      <  HR_LOW_THRESHOLD   # v3.9.3
+            next_low_hr  = next_val <  HR_LOW_THRESHOLD   # v3.9.3
             for sub in range(16):
                 t = sub / 16.0
                 ease = t * t * (3 - 2 * t)
                 interp_norm = cur_norm + (nxt_norm - cur_norm) * ease
-                bar_high_hr = high_hr if t < 0.5 else next_high_hr
+                bar_high_hr = high_hr    if t < 0.5 else next_high_hr
+                bar_low_hr  = low_hr     if t < 0.5 else next_low_hr   # v3.9.3
                 x0 = (i * 16 + sub) * slot
                 x1 = x0 + bw
                 n_segs = max(1, int(interp_norm * max_segs))
@@ -759,7 +793,7 @@ class RavenMinerDash:
                     y_top = y_bot - seg_h
                     frac = s / max(max_segs - 1, 1)
                     is_top = bar_high_hr and (s == n_segs - 1)
-                    color = seg_color(frac, is_top=is_top)
+                    color = seg_color(frac, is_top=is_top, is_low=bar_low_hr)  # v3.9.3
                     stipple = "gray50" if not is_top else "gray75"
                     c.create_rectangle(x0, y_top, x1, y_bot, fill=color, outline="", stipple=stipple)
 
@@ -945,7 +979,7 @@ class RavenMinerDash:
             r=requests.get("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd",timeout=6)
             with self._btc_lock:
                 self.btc=r.json()["bitcoin"]["usd"]
-        except: pass
+        except Exception: pass
 
     def refresh_loop(self):
         self.fetch_btc()  # initial fetch on startup
@@ -967,6 +1001,7 @@ class RavenMinerDash:
         self.update_display()
 
     def update_display(self):
+        global _alert_cfg_global_cache  # v3.9.3: module-level alert config cache
         with self._data_lock:
             d=dict(self.data)
         new_blocks=d.get("foundBlocks",0)
@@ -998,13 +1033,27 @@ class RavenMinerDash:
         acc=d.get("sharesAccepted",0); rej=d.get("sharesRejected",0)
         self.lbl_acc.config(text=str(acc))
         self.lbl_rej.config(text=str(rej),fg=RED if rej>0 else GREEN)
+        # v3.9.3: rejection percentage beside bad share count
+        _total=acc+rej
+        _pct=round(rej/_total*100,2) if _total>0 else 0.0
+        _pct_col=RED if _pct>=1.0 else ORANGE if _pct>0 else GREEN
+        self.lbl_rej_pct.config(text=f"{_pct:.2f} %",fg=_pct_col)
         self.lbl_bestdiff.config(text=fmt_diff(d.get("bestSessionDiff",0)))
         self.lbl_pool.config(text=d.get("stratumURL","--"))
         self.lbl_uptime.config(text=fmt_uptime((d.get("uptimeSeconds") or 0)))
         pwr=(d.get("power") or 0)
-        self.lbl_power.config(text=str(round(pwr,1))+" W",fg=RED if pwr>100 else ORANGE if pwr>80 else GREEN)
-        self.lbl_current.config(text=str(round((d.get("currentA") or 0),2))+" A")
-        self.lbl_voltage.config(text=str(round((d.get("voltage") or 0)/1000,2))+" V")
+        # v3.9.3: green 0-120W, orange 120-130W, red 130W+
+        self.lbl_power.config(text=str(round(pwr,1))+" W",fg=RED if pwr>=130 else ORANGE if pwr>=120 else GREEN)
+        # v3.9.3: green 0-10A, orange 10-12A, red 12A+
+        _cur=round((d.get("currentA") or 0),2)
+        self.lbl_current.config(text=str(_cur)+" A",fg=RED if _cur>=12 else ORANGE if _cur>=10 else GREEN)
+        # v3.9.3: red <12V, orange 11.99-12V, green 12-12.8V, orange 12.8-13.1V, red 13.1V+
+        _vlt=round((d.get("voltage") or 0)/1000,2)
+        _vlt_fg=(RED    if _vlt<11.99  else
+                 ORANGE if _vlt<12.0   else
+                 GREEN  if _vlt<12.8   else
+                 ORANGE if _vlt<13.1   else RED)
+        self.lbl_voltage.config(text=str(_vlt)+" V",fg=_vlt_fg)
         self.lbl_freq.config(text=str(d.get("frequency","--"))+" MHz")
         self.lbl_vcore.config(text=str(d.get("coreVoltageActual","--"))+" mV")
         fan=(d.get("fanspeed") or 0)
@@ -1023,7 +1072,11 @@ class RavenMinerDash:
         except: pass
         try: self.lbl_hr_refresh_stat.config(text=str(HR_REFRESH)+" s")
         except: pass
-        _acfg=load_alert_config(); _wh=_acfg.get("discord_webhook","")
+        # v3.9.3: use cached alert config — reloaded only when settings are saved
+        if _alert_cfg_global_cache is None:
+            _alert_cfg_global_cache = load_alert_config()
+        _acfg = _alert_cfg_global_cache
+        _wh=_acfg.get("discord_webhook","")
         _alm_temp=float(_acfg.get("alert_temp_threshold",85))
         _alm_hash=float(_acfg.get("alert_hash_threshold",0.5))
         _alm_vr=float(_acfg.get("alert_vr_temp_threshold",85))
@@ -1629,6 +1682,120 @@ class SettingsWindow(tk.Toplevel):
         self._reboot_slider.set(0)
         self._reboot_var.set(False)
         self._on_reboot_toggle()
+
+
+class CodeViewerWindow(tk.Toplevel):
+    """v3.9.3 — Separate window displaying the full program source code."""
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("RavenMiner HQ — Source Code Viewer")
+        self.configure(bg=BG)
+        self.geometry("920x700")
+        self.minsize(600, 400)
+        self.resizable(True, True)
+
+        # header
+        hdr = tk.Frame(self, bg=PURPLE_DIM, height=48)
+        hdr.pack(fill="x")
+        tk.Label(hdr, text="ᚱᚨᚡᛖ  SOURCE CODE VIEWER  ᚱᚨᚡᛖ",
+                 font=("Courier", 13, "bold"), fg=GOLD_BRIGHT, bg=PURPLE_DIM).pack(side="left", padx=16, pady=10)
+        tk.Label(hdr, text=VERSION, font=("Courier", 10), fg=GOLD, bg=PURPLE_DIM).pack(side="right", padx=16)
+        tk.Frame(self, height=2, bg=GOLD).pack(fill="x")
+
+        # search bar
+        sf = tk.Frame(self, bg="#0a0018")
+        sf.pack(fill="x")
+        tk.Label(sf, text="SEARCH:", font=("Courier", 9), fg=GOLD, bg="#0a0018").pack(side="left", padx=(12,4), pady=6)
+        self._svar = tk.StringVar()
+        se = tk.Entry(sf, textvariable=self._svar, font=("Courier", 11), fg=CYAN,
+                      bg="#0a0018", insertbackground=CYAN, relief="flat",
+                      highlightthickness=1, highlightcolor=PURPLE_GLOW,
+                      highlightbackground=PURPLE_DIM, width=30)
+        se.pack(side="left", pady=6, ipady=3)
+        se.bind("<Return>", lambda e: self._search())
+        tk.Button(sf, text="FIND",  font=("Courier", 9, "bold"), bg=PURPLE_DIM, fg=GOLD_BRIGHT,
+                  relief="flat", cursor="hand2", command=self._search).pack(side="left", padx=4)
+        tk.Button(sf, text="CLEAR", font=("Courier", 9), bg="#0a0018", fg=DIM,
+                  relief="flat", cursor="hand2", command=self._clear).pack(side="left", padx=2)
+        self._mlbl = tk.Label(sf, text="", font=("Courier", 9), fg=GOLD, bg="#0a0018")
+        self._mlbl.pack(side="left", padx=8)
+        tk.Button(sf, text="X  CLOSE", font=("Courier", 9, "bold"), bg="#0a0018", fg=RED,
+                  relief="flat", cursor="hand2", command=self.destroy).pack(side="right", padx=12)
+        tk.Frame(self, height=1, bg=PURPLE_DIM).pack(fill="x")
+
+        # text area
+        frm = tk.Frame(self, bg=BG)
+        frm.pack(fill="both", expand=True)
+        vscr = tk.Scrollbar(frm, orient="vertical",   bg=PURPLE_DIM, troughcolor=BG)
+        hscr = tk.Scrollbar(frm, orient="horizontal", bg=PURPLE_DIM, troughcolor=BG)
+        vscr.pack(side="right",  fill="y")
+        hscr.pack(side="bottom", fill="x")
+        self._txt = tk.Text(frm, font=("Courier", 10), bg="#05000f", fg=WHITE,
+                            insertbackground=GOLD, relief="flat", wrap="none",
+                            yscrollcommand=vscr.set, xscrollcommand=hscr.set,
+                            padx=10, pady=6)
+        self._txt.pack(fill="both", expand=True)
+        vscr.config(command=self._txt.yview)
+        hscr.config(command=self._txt.xview)
+
+        # colour tags
+        self._txt.tag_config("kw",      foreground="#cc99ff")
+        self._txt.tag_config("string",  foreground="#a8ff78")
+        self._txt.tag_config("comment", foreground="#555577", font=("Courier",10,"italic"))
+        self._txt.tag_config("number",  foreground="#ffcc44")
+        self._txt.tag_config("defn",    foreground=GOLD_BRIGHT, font=("Courier",10,"bold"))
+        self._txt.tag_config("hi",      background=GOLD, foreground=BG)
+
+        self._load()
+        self._txt.config(state="disabled")
+        lines = self._txt.index("end-1c").split(".")[0]
+        tk.Label(self, text=f"  {lines} lines  |  read-only",
+                 font=("Courier", 9), fg=DIM, bg="#0a0018", anchor="w").pack(fill="x")
+
+    def _load(self):
+        import re
+        try:
+            path = os.path.abspath(sys.argv[0]) if getattr(sys,"frozen",False) else os.path.abspath(__file__)
+            with open(path, "r", encoding="utf-8") as f:
+                code = f.read()
+        except Exception as ex:
+            code = f"# Source unavailable: {ex}"
+        self._txt.insert("1.0", code)
+        full = code
+        def hi(pat, tag, flags=0):
+            for m in re.finditer(pat, full, flags):
+                self._txt.tag_add(tag, f"1.0+{m.start()}c", f"1.0+{m.end()}c")
+        hi(r"#[^\n]*",                         "comment")
+        hi(r'""".*?"""',                         "string", re.DOTALL)
+        hi(r"'''.*?'''",                   "string", re.DOTALL)
+        hi(r'"[^"\n]*"',                   "string")
+        hi(r"'[^'\n]*'",                     "string")
+        hi(r"\b\d+(\.\d+)?\b",              "number")
+        hi(r"\b(def|class|return|import|from|as|if|elif|else|for|while|"
+           r"try|except|finally|with|pass|break|continue|lambda|and|or|"
+           r"not|in|is|None|True|False|global|yield|raise|assert)\b",  "kw")
+        hi(r"\b(def|class)\s+\w+",            "defn")
+
+    def _search(self):
+        self._txt.tag_remove("hi","1.0","end")
+        t = self._svar.get().strip()
+        if not t: return
+        n, pos = 0, "1.0"
+        first = None
+        while True:
+            p = self._txt.search(t, pos, stopindex="end", nocase=True)
+            if not p: break
+            e = f"{p}+{len(t)}c"
+            self._txt.tag_add("hi", p, e)
+            if first is None: first = p
+            n += 1; pos = e
+        self._mlbl.config(text=f"{n} match{'es' if n!=1 else ''}")
+        if first: self._txt.see(first)
+
+    def _clear(self):
+        self._svar.set("")
+        self._txt.tag_remove("hi","1.0","end")
+        self._mlbl.config(text="")
 
 if __name__ == "__main__":
     root = tk.Tk()
