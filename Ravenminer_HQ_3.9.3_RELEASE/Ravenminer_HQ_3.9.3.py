@@ -131,21 +131,7 @@ RUNE_POWER  = "\u16a0\u16d6\u16ba\u16a2 "
 RUNE_BLOCK  = "\u16c7\u16d6\u16d2\u16df"
 BITCOIN_BLOCK_TIME = 600
 # ── Theme dictionaries ───────────────────────────────────────────────────────
-CURRENT_THEME = "dark"
-THEME_DARK = {
-    "BG": BG, "COL_L": COL_L, "COL_C": COL_C, "COL_R": COL_R,
-    "GOLD": GOLD, "GOLD_BRIGHT": GOLD_BRIGHT,
-    "PURPLE": PURPLE, "PURPLE_DIM": PURPLE_DIM, "PURPLE_GLOW": PURPLE_GLOW,
-    "CYAN": CYAN, "RED": RED, "ORANGE": ORANGE,
-    "GREEN": GREEN, "WHITE": WHITE, "DIM": DIM,
-}
-THEME_LIGHT = {
-    "BG": "#f0f0f8", "COL_L": "#e0e0ee", "COL_C": "#e8e8f4", "COL_R": "#e0e0ee",
-    "GOLD": "#8b6914", "GOLD_BRIGHT": "#b8860b",
-    "PURPLE": "#5500cc", "PURPLE_DIM": "#8866cc", "PURPLE_GLOW": "#7722ee",
-    "CYAN": "#0066cc", "RED": "#cc0000", "ORANGE": "#cc5500",
-    "GREEN": "#006622", "WHITE": "#111122", "DIM": "#888899",
-}
+# theme dicts removed
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -303,10 +289,6 @@ class RavenMinerDash:
         self._countdown_loop()
         self.root.after(200, self._runes_pulse)
         self._setup_tray()
-        # Restore saved theme
-        _saved_theme = load_config().get("theme", "dark")
-        if _saved_theme == "light":
-            self.root.after(200, self._toggle_theme)
 
     def _init_valknut(self):
         base = load_valknut_base()
@@ -541,24 +523,19 @@ class RavenMinerDash:
         self.lbl_clock=tk.Label(hdr,text="",font=("Courier",18),fg=GOLD,bg=PURPLE_DIM)
         self.lbl_clock.pack(side="right",padx=20,anchor="n")
         self.lbl_version_small=tk.Label(hdr, text=VERSION,
-                                       font=("Courier",8), fg=GOLD_BRIGHT,
+                                       font=("Courier",13,"bold"), fg=GOLD_BRIGHT,
                                        bg=PURPLE_DIM)
         self.lbl_version_small.pack(side="right", padx=20, anchor="n")
-        # v3.9.4: click version label → open GitHub releases page
+        # v3.9.3: click version label → open GitHub page
         import webbrowser as _wb
         _GITHUB_URL = "https://github.com/Raven-Black00/RavenMiner-HQ"
         self.lbl_version_small.config(cursor="hand2")
         self.lbl_version_small.bind("<Button-1>",
             lambda e: _wb.open_new_tab(_GITHUB_URL))
         self.lbl_version_small.bind("<Enter>",
-            lambda e: self.lbl_version_small.config(fg="#ffffff", text=VERSION+" ↗ GitHub"))
+            lambda e: self.lbl_version_small.config(fg="#ffffff", font=("Courier",13,"bold"), text=VERSION+" ↗ GitHub"))
         self.lbl_version_small.bind("<Leave>",
-            lambda e: self.lbl_version_small.config(fg=PURPLE_DIM, text=VERSION))
-        self.theme_btn=tk.Button(hdr,text="☾ DARK",font=("Courier",10,"bold"),
-                                  bg=PURPLE_DIM,fg=GOLD_BRIGHT,activebackground=PURPLE,
-                                  relief="flat",cursor="hand2",bd=0,
-                                  command=self._toggle_theme)
-        self.theme_btn.pack(side="right",padx=10)
+            lambda e: self.lbl_version_small.config(fg=GOLD_BRIGHT, font=("Courier",13,"bold"), text=VERSION))
         tk.Frame(self.root,height=2,bg=GOLD).place(relx=0,y=70,relwidth=1)
         body=tk.Frame(self.root,bg=BG); body.place(relx=0,y=72,relwidth=1,height=sh-72-60)
         left=tk.Frame(body,bg=COL_L,width=310); left.pack(side="left",fill="both"); left.pack_propagate(False)
@@ -603,14 +580,9 @@ class RavenMinerDash:
         refresh_entry.bind("<FocusOut>",self._apply_refresh)
         tk.Label(bottom,text="REFRESH s:",font=("Courier",9),fg=GOLD,bg="#0a0018").pack(side="right",padx=(0,0))
         _live_stack=tk.Frame(bottom,bg="#0a0018")
-        _live_stack.pack(side="right",padx=6,pady=2)
-        self.lbl_live=tk.Label(_live_stack,text="◉ LIVE",font=("Courier",10,"bold"),fg=GOLD,bg="#0a0018")
-        self.lbl_live.pack(side="top",pady=(2,0))
-        tk.Button(_live_stack,text="TEST FLASH",font=("Courier",9),bg=PURPLE_DIM,fg=GOLD_BRIGHT,
-                  activebackground=PURPLE,command=self._trigger_valknut_flash).pack(side="top",fill="x",pady=(1,0))
-        tk.Button(_live_stack,text="</> CODE",font=("Courier",9),bg="#0a0018",fg=CYAN,
-                  activebackground=PURPLE_DIM,relief="flat",cursor="hand2",
-                  command=lambda: CodeViewerWindow(self.root)).pack(side="top",fill="x",pady=(1,2))
+        _live_stack.pack(side="right",padx=10,pady=2)
+        self.lbl_live=tk.Label(_live_stack,text="◉  LIVE",font=("Courier",16,"bold"),fg=GOLD_BRIGHT,bg="#0a0018")
+        self.lbl_live.pack(side="top",pady=(4,4))
         self.lbl_status=tk.Label(bottom,text="Connecting...",font=("Courier",10),fg=GOLD,bg="#0a0018",anchor="w")
         self.lbl_status.pack(side="left",fill="x",expand=True,padx=10,pady=4)
         self.lbl_version=tk.Label(bottom,text="",font=("Courier",10),fg=GOLD,bg="#0a0018")
@@ -631,8 +603,9 @@ class RavenMinerDash:
         tk.Label(p,text="VOLTAGE",font=("Courier",11),fg=GREEN,bg=COL_L).pack(pady=(10,2))
         self.volt_gauge_canvas=Canvas(p,width=200,height=210,bg=COL_L,highlightthickness=0); self.volt_gauge_canvas.pack()
         self._draw_gauge(self.volt_gauge_canvas, 0, GREEN, warn=11.9, crit=11.5, lo=10.0, hi=13.5, voltage_mode=True); self._divider(p)
-        self._stat_block(p,"OVERHEAT LIMIT","--","C",RED,"lbl_overheat",COL_L); self._divider(p)
-        self._stat_block(p,"TARGET TEMP","--","C",CYAN,"lbl_target_temp",COL_L)
+        tk.Label(p,text="CURRENT",font=("Courier",11),fg=ORANGE,bg=COL_L).pack(pady=(10,2))
+        self.curr_gauge_canvas=Canvas(p,width=200,height=210,bg=COL_L,highlightthickness=0); self.curr_gauge_canvas.pack()
+        self._draw_gauge(self.curr_gauge_canvas, 0, ORANGE, warn=10.0, crit=12.0, lo=0.0, hi=15.0, curr_mode=True)
 
     def _build_centre(self,p):
         # Vegvisir background canvas - fills entire centre column
@@ -751,14 +724,17 @@ class RavenMinerDash:
         gear_cv._photo_normal = _pn
         gear_cv._photo_hover  = _ph
 
-        def _render_gear(hover=False):
+        # v3.9.3: shimmer state
+        gear_cv._shimmer_phase = 0
+        gear_cv._shimmer_id    = None
+
+        def _render_gear(hover=False, shimmer_phase=0):
             gear_cv.delete("all")
             photo = gear_cv._photo_hover if hover else gear_cv._photo_normal
             cx = _GEAR_SIZE // 2
             if photo:
                 gear_cv.create_image(cx, cx, image=photo, anchor="center")
             else:
-                # fallback drawn gear if PIL unavailable
                 r_out = 28
                 fill_col = GOLD_BRIGHT if hover else "#9d5fff"
                 pts = []
@@ -767,22 +743,43 @@ class RavenMinerDash:
                     r = r_out if i%2==0 else r_out-8
                     pts += [cx+r*math.cos(angle), cx+r*math.sin(angle)]
                 gear_cv.create_polygon(pts, fill=fill_col, outline=GOLD, width=1)
+            # shimmer arc sweeps around the gear
+            arc_start = (shimmer_phase * 12) % 360
+            for i, (arc_w, opacity) in enumerate([(8, 0.25),(5, 0.45),(2, 0.75)]):
+                offset = i * 18
+                intensity = int(180 + opacity * 75)
+                shimmer_col = f"#{intensity:02x}{int(intensity*0.82):02x}{0x22:02x}"
+                gear_cv.create_arc(3, 3, _GEAR_SIZE-3, _GEAR_SIZE-3,
+                                   start=(arc_start + offset) % 360, extent=55,
+                                   style="arc", outline=shimmer_col, width=arc_w)
             if hover:
-                # golden glow ring
                 pad = 4
-                for width, col, alpha_step in [(10,"#c9a84c",1),(6,"#f0c040",1),(3,"#ffe87a",1)]:
+                for width, col in [(10,"#c9a84c"),(6,"#f0c040"),(3,"#ffe87a")]:
                     gear_cv.create_oval(pad, pad, _GEAR_SIZE-pad, _GEAR_SIZE-pad,
                                         outline=col, width=width, fill="")
 
+        def _shimmer_loop():
+            try:
+                if not gear_cv.winfo_exists(): return
+            except Exception: return
+            gear_cv._shimmer_phase = (gear_cv._shimmer_phase + 1) % 30
+            _render_gear(hover=False, shimmer_phase=gear_cv._shimmer_phase)
+            gear_cv._shimmer_id = gear_cv.after(80, _shimmer_loop)
+
         _render_gear(hover=False)
+        gear_cv._shimmer_id = gear_cv.after(80, _shimmer_loop)
 
         def _gear_enter(e):
-            _render_gear(hover=True)
+            if gear_cv._shimmer_id:
+                try: gear_cv.after_cancel(gear_cv._shimmer_id)
+                except Exception: pass
+                gear_cv._shimmer_id = None
+            _render_gear(hover=True, shimmer_phase=gear_cv._shimmer_phase)
             rune_lbl.config(fg=GOLD_BRIGHT, font=("Segoe UI", 18, "bold"))
 
         def _gear_leave(e):
-            _render_gear(hover=False)
             rune_lbl.config(fg=PURPLE_DIM, font=("Segoe UI", 18))
+            gear_cv._shimmer_id = gear_cv.after(80, _shimmer_loop)
 
         gear_cv.bind("<Enter>",    _gear_enter)
         gear_cv.bind("<Leave>",    _gear_leave)
@@ -810,7 +807,7 @@ class RavenMinerDash:
         lbl=tk.Label(f,text=value+" "+unit,font=("Courier",16 if small else 26,"bold"),fg=fg,bg=bg)
         lbl.pack(anchor="e"); setattr(self,attr,lbl)
 
-    def _draw_gauge(self,canvas,temp,needle_color=None,warn=55,crit=60,lo=0.0,hi=120.0,voltage_mode=False):
+    def _draw_gauge(self,canvas,temp,needle_color=None,warn=55,crit=60,lo=0.0,hi=120.0,voltage_mode=False,watt_mode=False,curr_mode=False):
         if needle_color is None: needle_color=ORANGE
         c=canvas; c.delete("all"); cx,cy,r=100,92,54
         MAX_TEMP=hi; MIN_TEMP=lo
@@ -833,28 +830,34 @@ class RavenMinerDash:
                 extent = a_end-a_start
                 c.create_arc(cx-r,cy-r,cx+r,cy+r,start=a_start,extent=extent,
                              style="arc",outline=bcol,width=16)
-            # tick marks: major every 1V, minor every 0.5V, micro every 0.1V
+            # tick marks on OUTER perimeter: major 1V, minor 0.5V, micro 0.1V
             v = lo
             while v <= hi + 0.001:
                 vr = round(v, 1)
                 is_major = abs(vr - round(vr)) < 0.01          # whole volt
                 is_half  = abs((vr * 2) - round(vr * 2)) < 0.01 and not is_major  # 0.5V
                 is_micro = not is_major and not is_half         # 0.1V
-                t_out = r + 2
-                t_in  = r + (11 if is_major else 7 if is_half else 4)
-                col   = "#aaaacc" if is_major else "#666688" if is_half else "#2a2a44"
-                lw    = 2 if is_major else 1
+                t_far  = r + 16                                  # outer rim
+                t_near = r + (5 if is_major else 10 if is_half else 13)  # tick depth
+                col    = "#ddddff" if is_major else "#7777aa" if is_half else "#333355"
+                lw     = 2 if is_major else 1
                 a = _ang(vr)
-                c.create_line(cx+t_out*math.cos(a), cy-t_out*math.sin(a),
-                              cx+t_in *math.cos(a), cy-t_in *math.sin(a), fill=col, width=lw)
+                c.create_line(cx+t_far *math.cos(a), cy-t_far *math.sin(a),
+                              cx+t_near*math.cos(a), cy-t_near*math.sin(a), fill=col, width=lw)
                 v = round(v + 0.1, 1)
-            # labels every 1V
-            for v in range(int(lo), int(hi)+1):
-                if v > hi: break
-                a=_ang(v)
-                lx=cx+(r+22)*math.cos(a); ly=cy-(r+22)*math.sin(a)
-                lbl_col=RED if v<11.5 else ORANGE if v<11.9 else GREEN if v<=12.9 else ORANGE
-                c.create_text(lx,ly,text=str(v),fill=lbl_col,font=("Courier",7,"bold"))
+            # labels every 0.5V on outer perimeter
+            v = lo
+            while v <= hi + 0.001:
+                vr = round(v, 1)
+                is_whole = abs(vr - round(vr)) < 0.01
+                a   = _ang(vr)
+                lx  = cx + (r + 26) * math.cos(a)
+                ly  = cy - (r + 26) * math.sin(a)
+                lbl_col = RED if vr < 11.5 else ORANGE if vr < 11.9 else GREEN if vr <= 12.9 else ORANGE
+                txt  = str(int(vr)) if is_whole else str(vr)
+                font = ("Courier", 7, "bold") if is_whole else ("Courier", 6)
+                c.create_text(lx, ly, text=txt, fill=lbl_col, font=font)
+                v = round(v + 0.5, 1)
             # needle
             pct=min(max((temp-MIN_TEMP)/span,0),1)
             color=RED if temp<11.5 else ORANGE if temp<11.9 else GREEN if temp<=12.9 else ORANGE
@@ -862,6 +865,51 @@ class RavenMinerDash:
             c.create_line(cx,cy,cx+(r-10)*math.cos(ar),cy-(r-10)*math.sin(ar),fill=GOLD_BRIGHT,width=3)
             c.create_oval(cx-5,cy-5,cx+5,cy+5,fill=GOLD,outline="")
             c.create_text(cx,cy+18,text=str(round(temp,2))+" V",font=("Courier",13,"bold"),fill=color)
+        elif curr_mode:
+            # ── Current gauge: green→orange→red bands, fractional outer ticks ──
+            bands=[
+                (0,    8.0,  GREEN),
+                (8.0,  10.0, ORANGE),
+                (10.0, 12.0, RED),
+                (12.0, hi,   "#ff2200"),
+            ]
+            for b_lo, b_hi, bcol in bands:
+                b_lo=max(b_lo,lo); b_hi=min(b_hi,hi)
+                if b_lo>=b_hi: continue
+                a_start=math.degrees(_ang(b_lo))
+                a_end  =math.degrees(_ang(b_hi))
+                c.create_arc(cx-r,cy-r,cx+r,cy+r,start=a_start,extent=a_end-a_start,
+                             style="arc",outline=bcol,width=16)
+            # outer ticks: major 1A, minor 0.5A, micro 0.2A (streamlined)
+            v=lo
+            while v<=hi+0.001:
+                vr=round(v,1)
+                is_major=abs(vr-round(vr))<0.01
+                is_half =abs((vr*2)-round(vr*2))<0.01 and not is_major
+                t_far =r+16
+                t_near=r+(5 if is_major else 10 if is_half else 13)
+                col   ="#ddddff" if is_major else "#7777aa" if is_half else "#333355"
+                lw    =2 if is_major else 1
+                a=_ang(vr)
+                c.create_line(cx+t_far*math.cos(a),cy-t_far*math.sin(a),
+                              cx+t_near*math.cos(a),cy-t_near*math.sin(a),fill=col,width=lw)
+                v=round(v+0.2,1)
+            # labels every 1A only
+            v=lo
+            while v<=hi+0.001:
+                vr=round(v,1)
+                a=_ang(vr)
+                lx=cx+(r+26)*math.cos(a); ly=cy-(r+26)*math.sin(a)
+                lbl_col=GREEN if vr<8 else ORANGE if vr<10 else RED
+                c.create_text(lx,ly,text=str(int(vr)),fill=lbl_col,font=("Courier",7,"bold"))
+                v=round(v+1.0,1)
+            # needle
+            pct=min(max((temp-lo)/span,0),1)
+            color=GREEN if temp<8 else ORANGE if temp<10 else RED
+            ar=math.radians(210-240*pct)
+            c.create_line(cx,cy,cx+(r-10)*math.cos(ar),cy-(r-10)*math.sin(ar),fill=GOLD_BRIGHT,width=3)
+            c.create_oval(cx-5,cy-5,cx+5,cy+5,fill=GOLD,outline="")
+            c.create_text(cx,cy+18,text=str(round(temp,2))+" A",font=("Courier",13,"bold"),fill=color)
         else:
             # ── Standard temp gauge ──
             for t in range(0, int(MAX_TEMP)+1, 5):
@@ -917,8 +965,12 @@ class RavenMinerDash:
 
         # v3.9.3: anchor floor/ceiling to show all colour bands
         data_range = max(mx - mn, 0.05)
-        floor   = min(mn - data_range * 0.1, 5.8)
-        ceiling = max(mx + data_range * 0.1, 6.6)
+        if data_range < 0.1:  # no real variance — use safe defaults
+            floor   = max(0.0, mn - 0.5)
+            ceiling = mx + 0.5
+        else:  # real data — tight range for maximum waveform swing
+            floor   = mn - data_range * 0.05
+            ceiling = mx + data_range * 0.05
 
         slot = max(1, w // (n * 16))
         bw   = max(1, slot - 1)
@@ -958,8 +1010,8 @@ class RavenMinerDash:
 
         def norm_val(v, idx=0):
             base   = max(0.0, min(1.0, (v - floor) / max(ceiling - floor, 0.001)))
-            curved = base ** 0.6
-            jitter = math.sin(idx * 2.399) * 0.04
+            curved = base ** 0.75  # v3.9.3: more linear — emphasises differences
+            jitter = math.sin(idx * 2.399) * 0.12  # v3.9.3: 3× bigger wave ripple
             return max(0.0, min(1.0, curved + jitter))
 
         max_segs = max(1, h // seg_unit)
@@ -995,7 +1047,7 @@ class RavenMinerDash:
                 sub_idx = i * 16 + sub
                 dist = abs(sub_idx - wave_pos)
                 if dist < wave_width:
-                    shimmer = (1.0 - dist / wave_width) * 0.55
+                    shimmer = (1.0 - dist / wave_width) * 0.75  # v3.9.3: stronger shimmer
                     br, bg, bb = _brighten(br, bg, bb, shimmer)
                 br = int(br); bg = int(bg); bb = int(bb)  # v3.9.3: force int
 
@@ -1152,11 +1204,11 @@ class RavenMinerDash:
             elif self._live_alpha <= 60: self._live_alpha = 60;  self._live_dir  =  1
             g     = min(255, 200 + int(self._live_alpha * 0.22))
             color = f"#{0:02x}{g:02x}{0:02x}"
-            try: self.lbl_live.config(text="◉ LIVE", fg=color)
+            try: self.lbl_live.config(text="◉  LIVE", fg=color, font=("Courier",16,"bold"))
             except Exception: pass
         else:
             self._live_alpha = 0
-            try: self.lbl_live.config(text="◉ OFFLINE", fg="#ff2222")
+            try: self.lbl_live.config(text="◉  OFFLINE", fg="#ff2222", font=("Courier",16,"bold"))
             except Exception: pass
         self.root.after(55, self._live_tick)
 
@@ -1274,8 +1326,6 @@ class RavenMinerDash:
         vr_temp=(d.get("vrTemp") or 0)
         self._draw_gauge(self.vr_gauge_canvas, vr_temp, CYAN, warn=50, crit=65)
         # lbl_vr_temp removed — data now fed to VR gauge
-        self.lbl_overheat.config(text=str(d.get("overheat_temp","--"))+" C")
-        self.lbl_target_temp.config(text=str(d.get("pidTargetTemp","--"))+" C")
         self._draw_gauge(self.gauge_canvas, temp, ORANGE, warn=55, crit=70)
         self._draw_gauge(self.vr_gauge_canvas, (d.get("vrTemp") or 0), CYAN, warn=50, crit=65)
         hr=(d.get("hashRate") or 0)/1000; hr1m=(d.get("hashRate_1m") or 0)/1000
@@ -1305,6 +1355,7 @@ class RavenMinerDash:
         # v3.9.3: green 0-10A, orange 10-12A, red 12A+
         _cur=round((d.get("currentA") or 0),2)
         self.lbl_current.config(text=str(_cur)+" A",fg=RED if _cur>=12 else ORANGE if _cur>=10 else GREEN)
+        self._draw_gauge(self.curr_gauge_canvas, _cur, ORANGE, warn=10.0, crit=12.0, lo=0.0, hi=15.0, curr_mode=True)
         # v3.9.3: red <12V, orange 11.99-12V, green 12-12.8V, orange 12.8-13.1V, red 13.1V+
         _vlt=round((d.get("voltage") or 0)/1000,2)
         _vlt_fg=(RED if _vlt<11.99 else ORANGE if _vlt<12.0 else GREEN if _vlt<12.8 else ORANGE if _vlt<13.1 else RED)
@@ -1449,60 +1500,6 @@ class RavenMinerDash:
                             stipple = "gray50" if not is_top else "gray75"
                             c.create_rectangle(x0, y_top, x1, y_bot, fill=color, outline="", stipple=stipple)
         self.root.after(80, self._pulse_bars)
-
-    def _toggle_theme(self):
-        global BG, COL_L, COL_C, COL_R, GOLD, GOLD_BRIGHT, PURPLE, PURPLE_DIM
-        global PURPLE_GLOW, CYAN, RED, ORANGE, GREEN, WHITE, DIM, CURRENT_THEME
-        if CURRENT_THEME == "dark":
-            t = THEME_LIGHT
-            CURRENT_THEME = "light"
-            self.theme_btn.config(text="☀ LIGHT")
-        else:
-            t = THEME_DARK
-            CURRENT_THEME = "dark"
-            self.theme_btn.config(text="☾ DARK")
-        BG=t["BG"]; COL_L=t["COL_L"]; COL_C=t["COL_C"]; COL_R=t["COL_R"]
-        GOLD=t["GOLD"]; GOLD_BRIGHT=t["GOLD_BRIGHT"]; PURPLE=t["PURPLE"]
-        PURPLE_DIM=t["PURPLE_DIM"]; PURPLE_GLOW=t["PURPLE_GLOW"]
-        CYAN=t["CYAN"]; RED=t["RED"]; ORANGE=t["ORANGE"]
-        GREEN=t["GREEN"]; WHITE=t["WHITE"]; DIM=t["DIM"]
-        self._apply_theme_to_widgets(self.root, t)
-        # Persist chosen theme
-        _c = load_config()
-        _c["theme"] = CURRENT_THEME
-        save_config(_c)
-
-    def _apply_theme_to_widgets(self, widget, t):
-        cls = widget.winfo_class()
-        try:
-            bg = widget.cget("bg")
-            # Map old bg to new bg contextually
-            dark = THEME_DARK; light = THEME_LIGHT
-            old = light if t is THEME_DARK else dark
-            bg_map = {
-                old["BG"]:         t["BG"],
-                old["COL_L"]:      t["COL_L"],
-                old["COL_C"]:      t["COL_C"],
-                old["COL_R"]:      t["COL_R"],
-                old["PURPLE_DIM"]: t["PURPLE_DIM"],
-                "#0a0018":         t["BG"],
-                "#09090f":         t["BG"],
-            }
-            new_bg = bg_map.get(bg, bg)
-            if cls in ("Frame","Toplevel","Label","Canvas"):
-                widget.config(bg=new_bg)
-            elif cls == "Button":
-                widget.config(bg=new_bg, fg=t["GOLD_BRIGHT"],
-                              activebackground=t["PURPLE"])
-            elif cls == "Entry":
-                widget.config(bg=t["BG"], fg=t["CYAN"],
-                              insertbackground=t["CYAN"],
-                              highlightcolor=t["PURPLE"],
-                              highlightbackground=t["PURPLE_DIM"])
-        except Exception:
-            pass
-        for child in widget.winfo_children():
-            self._apply_theme_to_widgets(child, t)
 
 
 
