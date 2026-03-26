@@ -980,13 +980,9 @@ class RavenMinerDash:
         mn = min(points) or 0
 
         # v3.9.3: anchor floor/ceiling to show all colour bands
-        data_range = max(mx - mn, 0.05)
-        if data_range < 0.1:  # no real variance — use safe defaults
-            floor   = max(0.0, mn - 0.5)
-            ceiling = mx + 0.5
-        else:  # real data — tight range for maximum waveform swing
-            floor   = mn - data_range * 0.05
-            ceiling = mx + data_range * 0.05
+        data_range = max(mx - mn, 0.02)  # minimum range to avoid flat-line
+        floor   = mn - data_range * 0.18  # 18% headroom below min — dips low
+        ceiling = mx + data_range * 0.18  # 18% headroom above max — peaks high
 
         sub_w   = max(1.0, (w - 72) / max(1, n * 16))  # float: fills full width
         seg_h   = 5
