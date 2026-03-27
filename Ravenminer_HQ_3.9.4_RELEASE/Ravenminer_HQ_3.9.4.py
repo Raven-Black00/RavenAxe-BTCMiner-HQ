@@ -764,7 +764,7 @@ class RavenMinerDash:
             for i, (arc_w, opacity) in enumerate([(8, 0.25),(5, 0.45),(2, 0.75)]):
                 offset = i * 18
                 intensity = int(180 + opacity * 75)
-                shimmer_col = f"#{intensity:02x}{int(intensity*0.82):02x}{0x22:02x}"
+                shimmer_col = f"#{int(intensity*0.67):02x}{int(intensity*0.40):02x}{intensity:02x}"
                 gear_cv.create_arc(3, 3, _GEAR_SIZE-3, _GEAR_SIZE-3,
                                    start=(arc_start + offset) % 360, extent=55,
                                    style="arc", outline=shimmer_col, width=arc_w)
@@ -1056,7 +1056,7 @@ class RavenMinerDash:
             gy    = int(h - 2 - frac * (h - 4))
             # faint grid line
             c.create_line(scale_w, gy, w - scale_w, gy,
-                          fill="#1e1a3a", width=2)
+                          fill="#1a1035", width=1)
             lbl = f"{hr_val:.2f}"
             # left label
             c.create_text(scale_w - 2, gy, text=lbl, anchor="e",
@@ -1129,8 +1129,7 @@ class RavenMinerDash:
             frac = gi / n_grid
             gy   = int(h - 2 - frac * (h - 4))
             c.create_line(scale_w, gy, w - scale_w, gy,
-                          fill="#2a2050", width=1, dash=(4, 3))
-
+                          fill="#4a3a7a", width=1, dash=(6, 2))
         # ── Schedule next animation frame ──
         # v3.9.3: draw smooth curved line connecting all data points
         if len(_line_pts) >= 2:
@@ -1193,6 +1192,7 @@ class RavenMinerDash:
         self.root.after(1000,self._countdown_loop)
 
     def _glow_loop(self):
+        if getattr(self, "_paused", False): self.root.after(200, self._glow_loop); return
         self.glow_step+=self.glow_dir*22  # v3.9.3: faster pulse step
         if self.glow_step>=255: self.glow_step=255; self.glow_dir=-1
         elif self.glow_step<=20: self.glow_step=20; self.glow_dir=1
@@ -1239,11 +1239,28 @@ class RavenMinerDash:
 
     def _on_minimize(self,event=None):
         if self.root.state()=="iconic":
+            self._paused = True
+            for _aid in ("_bar_anim_id", "_gold_pulse_id"):
+                _a = getattr(self, _aid, None)
+                if _a:
+                    try: self.root.after_cancel(_a)
+                    except Exception: pass
+                    setattr(self, _aid, None)
             self.root.withdraw()
 
     def _show_window(self):
-        self.root.after(0,self.root.deiconify)
-        self.root.after(0,lambda: self.root.state("zoomed"))
+        self._paused = False
+        self.root.after(0, self.root.deiconify)
+        self.root.after(50, lambda: self.root.state("zoomed"))
+        self.root.after(150, self._resume_loops)
+
+    def _resume_loops(self):
+        """Cleanly restart animation loops after restore from minimize."""
+        if not getattr(self, "_bar_anim_id", None):
+            self._draw_bars()
+        if not getattr(self, "_gold_pulse_id", None):
+            if getattr(self, "_gold_connected", False):
+                self._start_gold_pulse()
 
     def _quit_app(self):
         if self.tray_icon: self.tray_icon.stop()
@@ -1253,6 +1270,7 @@ class RavenMinerDash:
 
     def _runes_pulse(self):
         """Continuously pulse the runic title between gold and bright gold-white."""
+        if getattr(self, "_paused", False): self.root.after(200, self._runes_pulse); return
         import math
         self._runes_pulse_phase = getattr(self, "_runes_pulse_phase", 0.0) + 0.045
         t = (math.sin(self._runes_pulse_phase) + 1) / 2   # 0.0 -> 1.0
@@ -1280,6 +1298,7 @@ class RavenMinerDash:
 
     def _live_tick(self):
         """Always-running tick — reacts to self._is_online, never stops."""
+        if getattr(self, "_paused", False): self.root.after(200, self._live_tick); return
         online = getattr(self, "_is_online", False)
         if online:
             self._live_alpha = getattr(self, "_live_alpha", 0) + getattr(self, "_live_dir", 1) * 14
@@ -1526,6 +1545,7 @@ class RavenMinerDash:
     def _pulse_bars(self):
         """Gentle wave pulse on bars when idle (no new data for >3s)."""
         import math, time as _time
+        if getattr(self, "_paused", False): self.root.after(200, self._pulse_bars); return
         now = _time.time()
         idle = (now - getattr(self, '_last_data_time', now)) > 3
         if idle and self.hr_history:
@@ -1558,8 +1578,8 @@ class RavenMinerDash:
                         wave = math.sin(self._pulse_phase + (i * 16 + sub) * 0.18) * 0.06
                         norm = max(0.05, min(1.0, base ** 0.6 + wave))
                         _si = i * 16 + sub
-                        x0  = int(36 + _si * sub_w)
-                        x1  = max(x0 + 1, int(36 + (_si + 1) * sub_w))
+                        x0  = int(50 + _si * sub_w)
+                        x1  = max(x0 + 1, int(50 + (_si + 1) * sub_w))
                         n_segs = max(1, int(norm * max_segs))
                         bar_top = h - 2 - n_segs * seg_unit
                         if bar_top < h - 2:
