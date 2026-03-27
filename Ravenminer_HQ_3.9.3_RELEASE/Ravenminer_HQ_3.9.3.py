@@ -576,19 +576,19 @@ class RavenMinerDash:
         self.cdown_canvas=Canvas(bottom,height=40,bg="#0a0018",highlightthickness=0)
         self.cdown_canvas.pack(side="left",fill="x",expand=True,pady=8)
         # Refresh entries — packed side=right, rightmost first
-        self.refresh_var=tk.StringVar(value=str(REFRESH))
+        self.refresh_var=tk.StringVar(value=f"{REFRESH:.2f}")
         tk.Label(bottom,text="Refresh (s)",font=("Courier",8),fg=DIM,bg="#0a0018").pack(side="right",padx=(0,2))
         refresh_entry=tk.Entry(bottom,textvariable=self.refresh_var,font=("Courier",10,"bold"),
-                               fg=CYAN,bg="#0a0018",insertbackground=CYAN,width=4,
+                               fg=CYAN,bg="#0a0018",insertbackground=CYAN,width=5,
                                relief="flat",highlightthickness=1,highlightcolor=PURPLE,
                                highlightbackground=PURPLE_DIM)
         refresh_entry.pack(side="right",padx=(0,4),pady=12)
         refresh_entry.bind("<Return>",self._apply_refresh)
         # HR graph refresh — sits to the left of main refresh entry
-        self.hr_refresh_var=tk.StringVar(value=str(HR_REFRESH))
+        self.hr_refresh_var=tk.StringVar(value=f"{HR_REFRESH:.2f}")
         tk.Label(bottom,text="Graph (s)",font=("Courier",8),fg=DIM,bg="#0a0018").pack(side="right",padx=(0,2))
         hr_refresh_entry=tk.Entry(bottom,textvariable=self.hr_refresh_var,font=("Courier",10,"bold"),
-                               fg=GOLD,bg="#0a0018",insertbackground=GOLD,width=4,
+                               fg=GOLD,bg="#0a0018",insertbackground=GOLD,width=5,
                                relief="flat",highlightthickness=1,highlightcolor=GOLD,
                                highlightbackground=PURPLE_DIM)
         hr_refresh_entry.pack(side="right",padx=(8,4),pady=12)
@@ -992,9 +992,9 @@ class RavenMinerDash:
         HR_LOW_THRESHOLD = 6.4
 
         # ── Animated pulse: a bright shimmer wave sweeps left→right ──
-        wave_speed = 8          # sub-bars per animation phase step
-        wave_width = 30         # width of the shimmer in sub-bars
-        wave_pos   = (_anim_phase * wave_speed) % (n * 16 + wave_width)
+        import time as _wt
+        wave_width = 30          # width of the shimmer in sub-bars
+        wave_pos   = (_wt.time() * 80.0) % (n * 16 + wave_width)  # float glide
 
         def _hr_band(v):
             if v >= 6.5:   return "gold"
@@ -1003,13 +1003,25 @@ class RavenMinerDash:
             elif v >= 6.0: return "blue"
             else:          return "red"
 
-        BAND_COLOURS = {
-            "gold"  : (255, 231, 45),
-            "green" : (50,  221, 57),
-            "violet": (211, 50,  231),
-            "blue"  : (40,  175, 255),
-            "red"   : (231, 10,  0),
-        }
+        # Continuous color ramp — no hard band edges
+        _COLOR_STOPS = [
+            (5.8,  (231, 10,  0)),
+            (6.2,  (40,  175, 255)),
+            (6.35, (211, 50,  231)),
+            (6.45, (50,  221, 57)),
+            (6.6,  (255, 231, 45)),
+        ]
+        def _ramp_color(v):
+            if v <= _COLOR_STOPS[0][0]:  return _COLOR_STOPS[0][1]
+            if v >= _COLOR_STOPS[-1][0]: return _COLOR_STOPS[-1][1]
+            for _i in range(len(_COLOR_STOPS)-1):
+                v0, c0 = _COLOR_STOPS[_i]
+                v1, c1 = _COLOR_STOPS[_i+1]
+                if v0 <= v <= v1:
+                    _ft = (v - v0) / (v1 - v0)
+                    _ft = _ft * _ft * (3 - 2 * _ft)  # smoothstep
+                    return tuple(int(c0[j] + (c1[j]-c0[j]) * _ft) for j in range(3))
+            return _COLOR_STOPS[-1][1]
 
         def _brighten(r, g, b, amt):
             """Boost RGB toward white by amt (0.0–1.0)."""
@@ -1048,10 +1060,19 @@ class RavenMinerDash:
             c.create_text(w - scale_w + 2, gy, text=lbl, anchor="w",
                           fill="#7878aa", font=("Courier", 7))
 
+        # ── Smooth animated norms: lerp displayed → target each frame ──
+        _target_norms = [norm_val(v, i) for i, v in enumerate(points)]
+        if not hasattr(self, "_disp_norms") or len(self._disp_norms) != n:
+            self._disp_norms = list(_target_norms)  # snap on init/resize
+        else:
+            _lf = 0.08  # lerp factor — higher = snappier, lower = more glide
+            self._disp_norms = [d + (t - d) * _lf
+                                for d, t in zip(self._disp_norms, _target_norms)]
+
         for i, val in enumerate(points):
-            cur_norm = norm_val(val, i)
+            cur_norm = self._disp_norms[i]
             next_val = points[i + 1] if i + 1 < n else val
-            nxt_norm = norm_val(next_val, i + 1)
+            nxt_norm = self._disp_norms[i + 1] if i + 1 < n else cur_norm
 
             def _hr_band_v(v):
                 if v >= 6.5:   return "gold"
@@ -1072,14 +1093,15 @@ class RavenMinerDash:
                 x1  = max(x0 + 1, int(scale_w + (_si + 1) * sub_w))
                 n_segs = max(1, int(interp_norm * max_segs))
 
-                bar_band = hr_band if t < 0.5 else next_hr_band
-                br, bg_int, bb = (int(x) for x in BAND_COLOURS[bar_band])
+                # smooth color: interpolate hashrate value across the sub-bar
+                _iv = val + (next_val - val) * ease
+                br, bg_int, bb = _ramp_color(_iv)
 
                 # ── shimmer wave: how much to brighten this sub-bar ──
                 sub_idx = i * 16 + sub
                 dist = abs(sub_idx - wave_pos)
                 if dist < wave_width:
-                    shimmer = (1.0 - dist / wave_width) * 0.75  # v3.9.3: stronger shimmer
+                    shimmer = (1.0 - dist / wave_width) * 0.92  # v3.9.4: brighter shimmer
                     br, bg_int, bb = _brighten(br, bg_int, bb, shimmer)
                 br = int(br); bg_int = int(bg_int); bb = int(bb)  # safe — avoids global BG collision
 
@@ -1092,7 +1114,7 @@ class RavenMinerDash:
                         c.create_rectangle(x0, bar_top, x1, h - 2,
                             fill=f"#{int(br*0.128):02x}{int(bg_int*0.128):02x}{int(bb*0.128):02x}", outline="")
                 # collect top-line point for smooth curve
-                line_y = h - 2 - n_segs * seg_unit  # v3.9.3: line at very top of bar
+                line_y = h - 2 - interp_norm * (h - 4)  # continuous float — no steps
                 tr, tg, tb = (int(x) for x in _brighten(br, bg_int, bb, 0.45))
                 x_mid = x0 + (x1 - x0) // 2
                 _line_pts.append((x_mid, line_y, f"#{tr:02x}{tg:02x}{tb:02x}"))
@@ -1132,7 +1154,7 @@ class RavenMinerDash:
                     raise
                 except Exception as _e:
                     print(f"Graph anim error: {_e}")
-            self._bar_anim_id = self.root.after(80, _next_frame)  # v3.9.3: 80ms perf
+            self._bar_anim_id = self.root.after(33, _next_frame)  # v3.9.4: 30fps smooth
 
 
     def _draw_countdown_bar(self,elapsed,total):
@@ -1411,9 +1433,9 @@ class RavenMinerDash:
         self.lbl_version.config(text=hostname+"  |  "+d.get("ASICModel","")+"  |  "+d.get("version","")+"  |  ESC to quit")
         self.lbl_status.config(
             text="Updated: "+time.strftime("%H:%M:%S")+"  |  "+d.get("ssid","")+"  |  Blocks: "+str(new_blocks),fg=GOLD)
-        try:         self.lbl_refresh_stat.config(text=str(REFRESH)+" s")
+        try:         self.lbl_refresh_stat.config(text=f"{REFRESH:.2f} s")
         except Exception: pass
-        try: getattr(self,"lbl_hr_refresh_stat",None) and self.lbl_hr_refresh_stat.config(text=str(HR_REFRESH)+" s")
+        try: getattr(self,"lbl_hr_refresh_stat",None) and self.lbl_hr_refresh_stat.config(text=f"{HR_REFRESH:.2f} s")
         except Exception: pass
         # v3.9.3: cached alert config — no disk I/O every tick
         if _alert_cfg_global_cache is None:
@@ -1454,25 +1476,21 @@ class RavenMinerDash:
     def _apply_refresh(self, event=None):
         global REFRESH
         try:
-            val = float(self.refresh_var.get())
-            if val < 0.5:
-                val = 0.5
+            val = round(max(0.01, min(5.00, float(self.refresh_var.get()))), 2)
             REFRESH = val
-            self.refresh_var.set(str(val))
+            self.refresh_var.set(f"{val:.2f}")
         except ValueError:
-            self.refresh_var.set(str(REFRESH))
+            self.refresh_var.set(f"{REFRESH:.2f}")
 
     def _apply_hr_refresh(self, event=None):
         global HR_REFRESH
         try:
-            val = float(self.hr_refresh_var.get())
-            if val < 0.25:
-                val = 0.25
-            HR_REFRESH = round(val, 2)
-            self.hr_refresh_var.set(str(HR_REFRESH))
+            val = round(max(0.01, min(5.00, float(self.hr_refresh_var.get()))), 2)
+            HR_REFRESH = val
+            self.hr_refresh_var.set(f"{val:.2f}")
             # sync left-panel stat label immediately
             try:
-                getattr(self,"lbl_hr_refresh_stat",None) and self.lbl_hr_refresh_stat.config(text=str(HR_REFRESH)+" s")
+                getattr(self,"lbl_hr_refresh_stat",None) and self.lbl_hr_refresh_stat.config(text=f"{HR_REFRESH:.2f} s")
             except Exception:
                 pass
             # reset draw timer so graph refreshes at once with the new rate
@@ -1486,7 +1504,7 @@ class RavenMinerDash:
         now = _time.time()
         idle = (now - getattr(self, '_last_data_time', now)) > 3
         if idle and self.hr_history:
-            self._pulse_phase = getattr(self, '_pulse_phase', 0.0) + 0.08
+            self._pulse_phase = getattr(self, '_pulse_phase', 0.0) + 0.033
             c = self.bar_canvas
             c.update_idletasks()
             w = c.winfo_width()
@@ -1525,7 +1543,7 @@ class RavenMinerDash:
                         # bright top pixel
                         c.create_line(x0, bar_top, x1, bar_top,
                                       fill="#c0c0ff", width=2)
-        self.root.after(80, self._pulse_bars)
+        self.root.after(33, self._pulse_bars)
 
 
 
