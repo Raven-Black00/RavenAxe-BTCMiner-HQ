@@ -1,0 +1,24 @@
+# RavenMiner HQ v3.9.5 — Python Dependencies
+# Install with: pip install -r requirements.txt
+#
+# Built-in modules (no install needed):
+#   tkinter, time, threading, math, os, base64, io, json, sys,
+#   collections, datetime
+#
+# ── Required ─────────────────────────────────────────────────────────────────
+
+requests>=2.28.0          # HTTP API polling — miner telemetry + BTC price
+
+# ── Required for images, Vegvisir watermark, raven icon ──────────────────────
+
+Pillow>=9.0.0             # PIL Image / ImageTk / ImageDraw
+
+# ── Optional — system tray icon (Windows/Linux) ───────────────────────────────
+# If pystray is missing the app still runs; tray icon is simply disabled.
+
+pystray>=0.19.0           # Minimise-to-tray support
+
+# ── Build tool (only needed to compile to .exe — NOT a runtime dependency) ───
+# The build .bat installs this automatically if missing.
+# Uncomment if you want it pinned in your dev environment:
+# pyinstaller>=5.13.0

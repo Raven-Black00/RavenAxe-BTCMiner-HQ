@@ -1046,7 +1046,7 @@ class RavenMinerDash:
         usable_h = max_segs * seg_unit
 
         # ── scale margins for left/right Y-axis labels ──
-        scale_w = 36  # px reserved each side for labels
+        scale_w = 50  # px reserved each side for labels
 
         # ── faint horizontal grid lines + left/right HR scale ──
         n_grid = 5
@@ -1149,13 +1149,15 @@ class RavenMinerDash:
             for xm, ly, col in _line_pts[::16]:  # every 16 subs = 1 data point
                 c.create_oval(xm-2, ly-2, xm+2, ly+2, fill=col, outline="")
 
-        # DATA LOSS overlay — drawn on top of faded bars
+        # DATA LOSS / OFFLINE overlay — prominent, with dark backing rect
         if getattr(self, "_data_loss", False):
-            c.create_text(w//2, h//2, text="DATA LOSS",
-                          fill="#ff2222", font=("Courier", 32, "bold"),
-                          anchor="center")
+            c.create_rectangle(w//2 - 180, h//2 - 38, w//2 + 180, h//2 + 42,
+                               fill="#0a0018", outline="#ff2222", width=2)
+            c.create_text(w//2, h//2 - 8, text="MINER  OFFLINE",
+                          fill="#ff2222", font=("Courier", 22, "bold"), anchor="center")
+            c.create_text(w//2, h//2 + 22, text="reconnecting...",
+                          fill="#ff7700", font=("Courier", 11), anchor="center")
 
-        # v3.9.3: self-scheduling animation — guarded against KeyboardInterrupt
         if hasattr(self, "bar_canvas"):
             try:
                 if not self.bar_canvas.winfo_exists():
@@ -1270,11 +1272,11 @@ class RavenMinerDash:
 
     def _stop_live_pulse(self):
         self._is_online = False
-        # push zero so bars glide smoothly to bottom during offline
-        try:
-            self.hr_history.append(0.0)
-        except Exception:
-            pass
+        # graph frozen during offline — last known values preserved
+        # (zeros removed: they distorted scale and crashed bars to bottom)
+
+
+
 
     def _live_tick(self):
         """Always-running tick — reacts to self._is_online, never stops."""
