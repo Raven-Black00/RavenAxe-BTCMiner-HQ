@@ -395,15 +395,18 @@ class RavenMinerDash:
             rl = rl.transpose(Image.FLIP_LEFT_RIGHT)
             rr = rr.transpose(Image.FLIP_LEFT_RIGHT)
             # v3.9.3: use natural alpha — no opacity reduction, background is transparent
-            for _img in (rl, rr):
-                _r, _g, _b, _a = _img.split()
-                _a = _a.point(lambda p: int(p * 0.82))  # slight softness, fully see-through bg
-                _img.putalpha(_a)
+            # apply alpha softness — must reassign since putalpha mutates in-place
+            for _ref, _attr in ((rl, "rl"), (rr, "rr")):
+                _r, _g, _b, _a = _ref.split()
+                _a = _a.point(lambda p: int(p * 0.82))
+                _ref.putalpha(_a)
+            rl = rl.convert("RGBA")
+            rr = rr.convert("RGBA")
             x_margin = raven_size // 2 + 10
             y_pos    = raven_size // 2 + 52  # just below the section title banner (~40-50 px)
             canvas.delete("ravens")
-            self._raven_l_photo = ImageTk.PhotoImage(rl)
-            self._raven_r_photo = ImageTk.PhotoImage(rr)
+            self._raven_l_photo = ImageTk.PhotoImage(rl.convert("RGBA"))
+            self._raven_r_photo = ImageTk.PhotoImage(rr.convert("RGBA"))
             canvas.create_image(x_margin,        y_pos, image=self._raven_l_photo, anchor="center", tags="ravens")
             canvas.create_image(pw - x_margin,   y_pos, image=self._raven_r_photo, anchor="center", tags="ravens")
             canvas.tag_lower("ravens")
@@ -542,6 +545,11 @@ class RavenMinerDash:
                                        font=("Courier",13,"bold"), fg=GOLD_BRIGHT,
                                        bg=PURPLE_DIM)
         self.lbl_version_small.pack(side="right", padx=20, anchor="n")
+        # Firmware version label — bright gold, under software version
+        self.lbl_firmware = tk.Label(hdr, text="Firmware: --",
+                                     font=("Courier", 10, "bold"), fg=GOLD_BRIGHT,
+                                     bg=PURPLE_DIM)
+        self.lbl_firmware.pack(side="right", padx=20, anchor="s", pady=(0,4))
         # v3.9.3: click version label → open GitHub page
         import webbrowser as _wb
         _GITHUB_URL = "https://github.com/Raven-Black00/RavenMiner-HQ"
@@ -1225,17 +1233,55 @@ class RavenMinerDash:
     def _setup_tray(self):
         if not TRAY_OK: return
         try:
-            icon_img=make_tray_icon()
-            menu=(item("Show RavenMiner HQ",self._show_window,default=True),item("Quit",self._quit_app))
-            self.tray_icon=pystray.Icon("ravenminer",icon_img,"RavenMiner HQ",menu)
-            threading.Thread(target=self.tray_icon.run,daemon=True).start()
-        except Exception as e: print("Tray error:",e)
+            icon_img = make_tray_icon()
+            menu = pystray.Menu(
+                item("Show RavenMiner HQ", self._show_window, default=True),
+                item("Quit",               self._quit_app)
+            )
+            self.tray_icon = pystray.Icon(
+                "ravenminer", icon_img, "RavenMiner HQ", menu
+            )
+            threading.Thread(target=self.tray_icon.run, daemon=True).start()
+            # start dynamic title updater (updates every 5s)
+            self.root.after(5000, self._refresh_tray_title)
+        except Exception as e:
+            print("Tray setup error:", e)
+            self.tray_icon = None
+
+    def _refresh_tray_title(self):
+        """Update tray tooltip text with live miner data every 5 s."""
+        try:
+            if self.tray_icon and self.tray_icon.visible:
+                if not getattr(self, "_is_online", False):
+                    self.tray_icon.title = "RavenMiner HQ — OFFLINE"
+                else:
+                    hr   = getattr(self, "_tray_hr",   0)
+                    temp = getattr(self, "_tray_temp", 0)
+                    self.tray_icon.title = f"RavenMiner HQ — {hr:.2f} TH/s  {temp:.0f}°C"
+        except Exception:
+            pass
+        self.root.after(5000, self._refresh_tray_title)
 
     def _on_close(self):
-        self.root.withdraw()
-        if self.tray_icon:
-            try: self.tray_icon.notify("RavenMiner HQ is still running","Click to restore")
-            except Exception: pass
+        """Close button → minimise to tray if available, else quit cleanly."""
+        if TRAY_OK and getattr(self, "tray_icon", None):
+            # pause animations before hiding
+            self._paused = True
+            for _aid in ("_bar_anim_id", "_gold_pulse_id"):
+                _a = getattr(self, _aid, None)
+                if _a:
+                    try: self.root.after_cancel(_a)
+                    except Exception: pass
+                    setattr(self, _aid, None)
+            self.root.withdraw()
+            try:
+                self.tray_icon.notify("RavenMiner HQ", "Running in system tray — click icon to restore")
+            except Exception:
+                pass
+        else:
+            # no tray available — quit cleanly
+            self._quit_app()
+
 
     def _on_minimize(self,event=None):
         if self.root.state()=="iconic":
@@ -1431,6 +1477,8 @@ class RavenMinerDash:
         self._draw_gauge(self.gauge_canvas, temp, ORANGE, warn=55, crit=70)
         self._draw_gauge(self.vr_gauge_canvas, (d.get("vrTemp") or 0), CYAN, warn=50, crit=65)
         hr=(d.get("hashRate") or 0)/1000; hr1m=(d.get("hashRate_1m") or 0)/1000
+        self._tray_hr   = hr1m   # cached for tray tooltip
+        self._tray_temp = temp   # cached for tray tooltip
         hr10=(d.get("hashRate_10m") or 0)/1000; hr1h=(d.get("hashRate_1h") or 0)/1000
         self.lbl_hashrate.config(text=f"{hr:.3f}")
         self.lbl_hr1m.config(text=str(round(hr1m,3))+" TH/s")
@@ -1475,6 +1523,9 @@ class RavenMinerDash:
         self.lbl_wifi.config(text=str(rssi)+" dBm",fg=GREEN if rssi>-60 else ORANGE if rssi>-75 else RED)
         hostname=d.get("hostname","").upper()
         self.lbl_version.config(text=hostname+"  |  "+d.get("ASICModel","")+"  |  "+d.get("version","")+"  |  ESC to quit")
+        # Firmware version — bright gold header label
+        _fw = d.get("firmwareVersion", "") or d.get("version", "") or "--"
+        self.lbl_firmware.config(text=f"Firmware: {_fw}")
         self.lbl_status.config(
             text="Updated: "+time.strftime("%H:%M:%S")+"  |  "+d.get("ssid","")+"  |  Blocks: "+str(new_blocks),fg=GOLD)
         try:         self.lbl_refresh_stat.config(text=f"{REFRESH:.2f} s")
