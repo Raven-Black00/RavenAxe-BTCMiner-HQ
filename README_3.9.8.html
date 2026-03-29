@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RavenMiner HQ v3.9.8</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Cinzel:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0018; --surface: #110028; --surface2: #1a0035;
+  --border: #3a1060; --gold: #f0c040; --gold2: #ffe87a;
+  --cyan: #00e5ff; --green: #39ff7a; --orange: #ff9900;
+  --red: #ff3333; --purple: #cc66ff; --dim: #7a6090;
+  --text: #e8ddf8; --mono: 'Share Tech Mono', 'Courier New', monospace;
+  --display: 'Cinzel', serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--mono); font-size: 15px; line-height: 1.7; min-height: 100vh; padding: 0 0 60px; }
+
+/* HERO */
+.hero { background: linear-gradient(180deg, #1a003a 0%, #0a0018 100%); border-bottom: 2px solid var(--gold); padding: 48px 40px 32px; text-align: center; position: relative; overflow: hidden; }
+.hero::before { content: 'ᚠ ᚢ ᚦ ᚨ ᚱ ᚲ ᚷ ᚹ ᚺ ᚾ ᛁ ᛃ ᛇ ᛈ ᛉ ᛊ ᛏ ᛒ ᛖ ᛗ ᛚ ᛜ ᛞ ᛟ'; position: absolute; top: 8px; left: 0; right: 0; text-align: center; font-size: 13px; letter-spacing: 6px; color: rgba(240,192,64,0.25); font-family: var(--mono); }
+.hero::after { content: 'ᚠ ᚢ ᚦ ᚨ ᚱ ᚲ ᚷ ᚹ ᚺ ᚾ ᛁ ᛃ ᛇ ᛈ ᛉ ᛊ ᛏ ᛒ ᛖ ᛗ ᛚ ᛜ ᛞ ᛟ'; position: absolute; bottom: 8px; left: 0; right: 0; text-align: center; font-size: 13px; letter-spacing: 6px; color: rgba(240,192,64,0.25); font-family: var(--mono); }
+.ascii-banner { font-family: var(--mono); font-size: clamp(5px, 1.1vw, 12px); line-height: 1.2; color: var(--gold); text-shadow: 0 0 12px var(--gold), 0 0 28px rgba(240,192,64,0.4); white-space: pre; overflow-x: auto; margin: 0 auto 16px; display: inline-block; }
+.version-badge { display: inline-block; background: linear-gradient(90deg, #3a1060, #1a0035); border: 1px solid var(--gold); border-radius: 999px; padding: 4px 20px; font-size: 13px; color: var(--gold2); letter-spacing: 3px; margin-bottom: 20px; text-shadow: 0 0 8px var(--gold); }
+.tagline { font-family: var(--mono); font-style: italic; color: var(--dim); font-size: 13px; line-height: 2; max-width: 600px; margin: 0 auto; }
+.tagline span { color: var(--gold2); }
+
+/* LAYOUT */
+.container { max-width: 960px; margin: 0 auto; padding: 0 28px; }
+
+/* SECTION TITLES */
+.section { margin-top: 48px; }
+h2 { font-family: var(--display); font-size: 18px; letter-spacing: 2px; color: var(--gold2); text-transform: uppercase; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; text-shadow: 0 0 12px rgba(240,192,64,0.4); }
+h2 .rune { color: var(--gold); font-size: 22px; font-family: var(--mono); text-shadow: 0 0 16px var(--gold); }
+h3 { color: var(--purple); font-family: var(--mono); font-size: 13px; letter-spacing: 2px; text-transform: uppercase; margin: 24px 0 10px; display: flex; align-items: center; gap: 8px; }
+h3 .rune { color: var(--gold); font-size: 16px; text-shadow: 0 0 10px var(--gold); }
+p { margin-bottom: 14px; max-width: 80ch; }
+
+/* LISTS */
+ul { list-style: none; padding: 0; }
+ul li { padding: 4px 0 4px 22px; position: relative; color: var(--text); }
+ul li::before { content: '᛬'; position: absolute; left: 0; color: var(--gold); font-size: 11px; top: 7px; }
+ul li strong { color: var(--gold2); }
+
+/* CODE */
+pre, code { font-family: var(--mono); }
+code { background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; font-size: 13px; color: var(--cyan); }
+pre { background: #0d0020; border: 1px solid var(--border); border-left: 3px solid var(--gold); border-radius: 6px; padding: 20px 22px; overflow-x: auto; font-size: 13px; color: var(--green); margin: 14px 0; line-height: 1.6; }
+pre .cmd { color: var(--gold2); }
+pre .comment { color: var(--dim); }
+
+/* DIVIDER */
+hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+/* TABLE */
+table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 16px 0; }
+thead tr { background: #1a0035; border-bottom: 2px solid var(--gold); }
+thead th { color: var(--gold); font-family: var(--display); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; padding: 10px 14px; text-align: left; }
+tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+tbody tr:hover { background: rgba(255,255,255,0.03); }
+tbody td { padding: 9px 14px; color: var(--text); }
+tbody td code { background: none; border: none; padding: 0; }
+.td-pkg { color: var(--cyan); }
+.td-ver { color: var(--gold2); }
+.td-desc { color: var(--dim); }
+
+/* BLOCKQUOTE */
+blockquote { border-left: 3px solid var(--purple); background: #110025; padding: 14px 20px; border-radius: 0 6px 6px 0; margin: 14px 0; font-style: italic; color: var(--dim); }
+blockquote strong { color: var(--gold2); }
+
+/* BADGES */
+.badge { display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 11px; letter-spacing: 1px; font-weight: bold; margin-right: 4px; }
+.badge-green  { background: rgba(57,255,122,0.15);  color: var(--green);  border: 1px solid var(--green); }
+.badge-orange { background: rgba(255,153,0,0.15);   color: var(--orange); border: 1px solid var(--orange); }
+.badge-red    { background: rgba(255,51,51,0.15);   color: var(--red);    border: 1px solid var(--red); }
+.badge-cyan   { background: rgba(0,229,255,0.12);   color: var(--cyan);   border: 1px solid var(--cyan); }
+.badge-gold   { background: rgba(240,192,64,0.15);  color: var(--gold2);  border: 1px solid var(--gold); }
+.badge-purple { background: rgba(204,102,255,0.15); color: var(--purple); border: 1px solid var(--purple); }
+
+/* FILE TREE */
+.filetree { background: #0d0020; border: 1px solid var(--border); border-left: 3px solid var(--purple); border-radius: 6px; padding: 18px 22px; font-size: 13px; line-height: 2; white-space: pre; overflow-x: auto; }
+.ft-root  { color: var(--gold2); font-weight: bold; }
+.ft-dir   { color: var(--purple); }
+.ft-file  { color: var(--cyan); }
+.ft-arrow { color: var(--gold); }
+.ft-dim   { color: var(--dim); }
+
+/* WHAT'S NEW BADGE */
+.new-badge { display: inline-block; background: linear-gradient(90deg, var(--gold), var(--orange)); color: #0a0018; font-size: 10px; font-weight: bold; padding: 1px 8px; border-radius: 999px; margin-left: 8px; letter-spacing: 1px; vertical-align: middle; }
+
+/* RUNE DIVIDER */
+.rune-divider { text-align: center; color: rgba(240,192,64,0.3); letter-spacing: 8px; font-size: 13px; margin: 36px 0; font-family: var(--mono); }
+
+/* FOOTER */
+.footer { margin-top: 60px; border-top: 2px solid var(--gold); background: linear-gradient(0deg, #1a003a 0%, #0a0018 100%); padding: 32px 40px; text-align: center; }
+.footer-runes { font-size: 18px; letter-spacing: 6px; color: var(--gold); text-shadow: 0 0 14px var(--gold); display: block; margin-bottom: 12px; }
+.footer p { font-style: italic; color: var(--dim); font-size: 13px; max-width: none; }
+.footer a { color: var(--gold2); text-decoration: none; }
+.footer a:hover { color: #fff; text-decoration: underline; }
+
+/* CREDITS BLOCK */
+.credit-block { background: #110028; border: 1px solid var(--border); border-radius: 8px; padding: 18px 22px; margin: 10px 0; }
+.credit-block .name  { color: var(--gold2); font-size: 15px; font-family: var(--display); letter-spacing: 1px; }
+.credit-block .role  { color: var(--dim); font-size: 12px; margin-top: 2px; }
+.credit-block .contact { color: var(--cyan); font-size: 12px; margin-top: 4px; }
+
+/* SYMBOLISM GRID */
+.symbol-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin: 14px 0; }
+.symbol-card { background: #110028; border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px; }
+.symbol-card .sym-rune { color: var(--gold); font-size: 22px; text-shadow: 0 0 14px var(--gold); }
+.symbol-card .sym-name { color: var(--gold2); font-size: 13px; font-family: var(--display); letter-spacing: 1px; margin: 4px 0; }
+.symbol-card .sym-desc { color: var(--dim); font-size: 12px; }
+
+/* SELENE ATTRIBUTION */
+.selene-block {
+  background: linear-gradient(135deg, #0f001f, #1a003a, #120030);
+  border: 1px solid var(--purple);
+  border-left: 4px solid var(--gold);
+  border-radius: 10px;
+  padding: 24px 28px;
+  margin-top: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.selene-block::before {
+  content: 'ᛋᛖᛚᛖᚾᛖ';
+  position: absolute;
+  top: 8px; right: 14px;
+  font-size: 11px;
+  letter-spacing: 4px;
+  color: rgba(204,102,255,0.25);
+  font-family: var(--mono);
+}
+.selene-block .s-name {
+  color: var(--purple);
+  font-family: var(--display);
+  font-size: 17px;
+  letter-spacing: 2px;
+  text-shadow: 0 0 14px rgba(204,102,255,0.7);
+}
+.selene-block .s-title {
+  color: var(--dim);
+  font-size: 12px;
+  font-style: italic;
+  margin: 4px 0 12px;
+  letter-spacing: 1px;
+}
+.selene-block .s-quote {
+  color: var(--gold2);
+  font-style: italic;
+  font-size: 13px;
+  line-height: 2;
+  border-left: 2px solid rgba(240,192,64,0.3);
+  padding-left: 14px;
+}
+.selene-block .s-footer {
+  margin-top: 14px;
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 1px;
+}
+.selene-block .s-footer span { color: var(--purple); }
+
+a { color: var(--gold2); }
+a:hover { color: #fff; }
+
+@media (max-width: 600px) {
+  .hero { padding: 32px 16px 24px; }
+  .container { padding: 0 16px; }
+  .ascii-banner { font-size: 4px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+<pre class="ascii-banner">
+ ██████╗  █████╗ ██╗   ██╗███████╗███╗   ██╗███╗   ███╗██╗███╗   ██╗███████╗██████╗ 
+ ██╔══██╗██╔══██╗██║   ██║██╔════╝████╗  ██║████╗ ████║██║████╗  ██║██╔════╝██╔══██╗
+ ██████╔╝███████║██║   ██║█████╗  ██╔██╗ ██║██╔████╔██║██║██╔██╗ ██║█████╗  ██████╔╝
+ ██╔══██╗██╔══██╗╚██╗ ██╔╝██╔══╝  ██║╚██╗██║██║╚██╔╝██║██║██║╚██╗██║██╔══╝  ██╔══██╗
+ ██║  ██║██║  ██║ ╚████╔╝ ███████╗██║ ╚████║██║ ╚═╝ ██║██║██║ ╚████║███████╗██║  ██║
+ ╚═╝  ╚═╝╚═╝  ╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═══╝╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝
+                              H Q  —  v 3 . 9 . 8
+</pre>
+  <div class="version-badge">&nbsp;&nbsp;v3.9.8&nbsp;&nbsp;</div>
+  <div class="tagline">
+    <span>Two ravens fly at the Allfather's shoulder</span><br>
+    Huginn carries Thought, Muninn carries Memory.<br>
+    <span>One watches your hashrate. One watches your temperature.</span><br>
+    Neither sleeps.
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="container">
+
+  <!-- WHAT IS -->
+  <div class="section">
+    <h2><span class="rune">ᚱ</span> What is RavenMiner HQ?</h2>
+    <p><strong style="color:var(--gold2)">RavenMiner HQ</strong> is a real-time Bitcoin mining dashboard built for the <strong style="color:var(--cyan)">AvalonMiner / RavenMiner</strong> family of ASIC miners. It monitors your miner over the local network API and presents all critical data in a dark, Norse-themed Tkinter GUI — with runic motifs, Vegvisir watermarks, Valknut animations, and gold-on-purple aesthetics drawn from the Elder Futhark and Slavic symbolism.</p>
+    <blockquote>
+      <span class="badge badge-gold">Python 3.x</span>
+      <span class="badge badge-purple">Tkinter</span>
+      <span class="badge badge-cyan">PIL / pystray</span>
+      <span class="badge badge-orange">Discord Alerts</span><br><br>
+      API endpoint: <code>http://&lt;MINER_IP&gt;/api/system/info</code><br>
+      Tested on: <strong>AvalonMiner A14</strong> series running RavenMiner firmware
+    </blockquote>
+  </div>
+
+  <div class="rune-divider">ᚠ &nbsp; ᚢ &nbsp; ᚦ &nbsp; ᚨ &nbsp; ᚱ &nbsp; ᚲ &nbsp; ᚷ &nbsp; ᚹ</div>
+
+  <!-- WHAT'S NEW -->
+  <div class="section">
+    <h2><span class="rune">ᚾ</span> What's New in v3.9.8 <span class="new-badge">NEW</span></h2>
+    <ul>
+      <li><strong>Pool User Display</strong> — Pool username now shown in bright gold on the far right of the Network Ping row, live-updated every poll cycle <span class="new-badge">NEW</span></li>
+      <li><strong>Bug Fixes</strong> — Continued stability improvements over v3.9.7</li>
+      <li><strong>Thread-safe ping</strong> — Non-blocking TCP ping with in-flight guard, colour-coded <span class="badge badge-cyan">cyan</span><span class="badge badge-orange">orange</span><span class="badge badge-red">red</span> by latency</li>
+      <li><strong>Discord cooldown</strong> — Thread-safe 60-second per-alert-title cooldown (BUG5 fix) carried forward</li>
+    </ul>
+  </div>
+
+  <div class="rune-divider">ᚠ &nbsp; ᚢ &nbsp; ᚦ &nbsp; ᚨ &nbsp; ᚱ &nbsp; ᚲ &nbsp; ᚷ &nbsp; ᚹ</div>
+
+  <!-- FEATURES -->
+  <div class="section">
+    <h2><span class="rune">ᚠ</span> Features</h2>
+
+    <h3><span class="rune">ᛁ</span> Real-Time Monitoring</h3>
+    <ul>
+      <li><strong>Hashrate</strong> — live TH/s with animated electric-blue pulse glow</li>
+      <li><strong>Hashrate History Graph</strong> — 40-bar animated chart; bars colour by band: <span class="badge badge-gold">≥6.5 TH/s gold</span> <span class="badge badge-green">≥6.4 green</span> <span class="badge badge-purple">≥6.3 violet</span> <span class="badge badge-cyan">≥6.0 blue</span> <span class="badge badge-red">&lt;6.0 red</span></li>
+      <li><strong>ASIC &amp; VR Temperature</strong> — gauge arcs with colour-coded needle</li>
+      <li><strong>Power</strong> — <span class="badge badge-green">0–119 W</span> <span class="badge badge-orange">120–129 W</span> <span class="badge badge-red">≥130 W</span></li>
+      <li><strong>Input Current</strong> — <span class="badge badge-green">0–9.9 A</span> <span class="badge badge-orange">10–11.9 A</span> <span class="badge badge-red">≥12 A</span></li>
+      <li><strong>Voltage</strong> — <span class="badge badge-red">&lt;12 V</span> <span class="badge badge-orange">11.99–12 V</span> <span class="badge badge-green">12–12.8 V</span> <span class="badge badge-orange">&gt;12.8 V</span></li>
+      <li><strong>Fan Speed &amp; RPM</strong> — colour-coded threshold display</li>
+      <li><strong>WiFi RSSI</strong> — signal strength colour coding</li>
+      <li><strong>Shares OK / BAD / Best Diff</strong> — large 22pt bold font with rejection label</li>
+      <li><strong>BTC Price</strong> — live via CoinGecko API, 60s updates</li>
+      <li><strong>Pool &amp; Uptime</strong> — gold pulsing labels</li>
+      <li><strong>Network Ping</strong> — TCP latency in <span class="badge badge-cyan">cyan</span><span class="badge badge-orange">orange</span><span class="badge badge-red">red</span> with <strong style="color:var(--gold2)">pool username bright gold far-right</strong> <span class="new-badge">v3.9.8</span></li>
+      <li><strong>Next Block Countdown</strong> — animated progress bar</li>
+    </ul>
+
+    <h3><span class="rune">ᚦ</span> Alerts &amp; Discord Webhooks</h3>
+    <ul>
+      <li>ASIC &amp; VR overheat alert — configurable °C threshold</li>
+      <li>Low hashrate alert — configurable TH/s threshold</li>
+      <li>Block found notification</li>
+      <li>Miner offline — 3 consecutive failed polls</li>
+      <li><strong>60-second cooldown</strong> per alert type — no flooding, thread-safe</li>
+    </ul>
+
+    <h3><span class="rune">ᚹ</span> UI &amp; Aesthetics</h3>
+    <ul>
+      <li><strong>Vegvisir</strong> — animated watermark, centre panel, 85% fill, 35% opacity</li>
+      <li><strong>Valknut</strong> — flash animation on each new accepted share</li>
+      <li><strong>Huginn &amp; Muninn</strong> — ravens brighten with warm gold shimmer on every share</li>
+      <li><strong>Block Found</strong> — full-screen flash with Norse rune overlay &amp; audio beep</li>
+      <li><strong>⚡ LIVE / ☠ OFFLINE</strong> — pulsing indicator, bottom bar</li>
+      <li><strong>System tray</strong> icon — show / hide / quit (pystray)</li>
+      <li><strong>Source Code Viewer</strong> — built-in syntax-highlighted browser with live search</li>
+      <li><strong>Hi-res 3D gear</strong> — settings button with golden glow ring on hover</li>
+    </ul>
+
+    <h3><span class="rune">ᛊ</span> Settings &amp; Control</h3>
+    <ul>
+      <li>Miner IP saved to JSON, persists across restarts</li>
+      <li>Thermal limits, target temp, fan control, frequency, core voltage</li>
+      <li>Discord webhook URL &amp; per-alert thresholds</li>
+      <li>Reboot slider guard — 2-second hold to confirm</li>
+      <li>Adjustable refresh rate 0.5s – 60s</li>
+      <li>Adjustable graph refresh rate (independent)</li>
+    </ul>
+  </div>
+
+  <div class="rune-divider">ᚠ &nbsp; ᚢ &nbsp; ᚦ &nbsp; ᚨ &nbsp; ᚱ &nbsp; ᚲ &nbsp; ᚷ &nbsp; ᚹ</div>
+
+  <!-- QUICK START -->
+  <div class="section">
+    <h2><span class="rune">ᛏ</span> Quick Start</h2>
+    <pre><span class="cmd">pip install -r requirements.txt</span>
+<span class="cmd">python RavenminerHQ_3.9.8.py</span>
+<span class="comment"># Or launch the compiled .exe directly — no Python needed</span></pre>
+    <p>See <a href="INSTALL.md"><strong>INSTALL.md</strong></a> for full setup, <code>.exe</code> build instructions, Discord alert configuration, and troubleshooting.</p>
+  </div>
+
+  <div class="rune-divider">ᚠ &nbsp; ᚢ &nbsp; ᚦ &nbsp; ᚨ &nbsp; ᚱ &nbsp; ᚲ &nbsp; ᚷ &nbsp; ᚹ</div>
+
+  <!-- FILE STRUCTURE -->
+  <div class="section">
+    <h2><span class="rune">ᛞ</span> File Structure</h2>
+    <div class="filetree"><span class="ft-root">RavenMinerHQ_v3.9.8_RELEASE/</span>
+<span class="ft-file">├── RavenminerHQ_3.9.8.py</span>         <span class="ft-arrow">←</span> <span class="ft-dim">Main program — run this</span>
+<span class="ft-file">├── RavenMinerBUILD_3.9.8.bat</span>       <span class="ft-arrow">←</span> <span class="ft-dim">Build to .exe (Windows, Norse-themed forge)</span>
+<span class="ft-file">├── requirements.txt</span>                 <span class="ft-arrow">←</span> <span class="ft-dim">Python runtime dependencies</span>
+<span class="ft-file">├── README.md</span>                        <span class="ft-arrow">←</span> <span class="ft-dim">This file</span>
+<span class="ft-file">├── INSTALL.md</span>                       <span class="ft-arrow">←</span> <span class="ft-dim">Full installation &amp; configuration guide</span>
+<span class="ft-file">├── CHANGELOG.md</span>                     <span class="ft-arrow">←</span> <span class="ft-dim">Complete version history</span>
+<span class="ft-dir">└── src/</span>
+<span class="ft-file">    └── RavenminerHQ_3.9.8.py</span>        <span class="ft-arrow">←</span> <span class="ft-dim">Source copy used by PyInstaller</span>
+<span class="ft-dir">└── (auto-created at first run)/</span>
+<span class="ft-file">    ├── ravenminer_config.json</span>        <span class="ft-arrow">←</span> <span class="ft-dim">Miner IP, refresh rates</span>
+<span class="ft-file">    └── ravenminer_alerts.json</span>        <span class="ft-arrow">←</span> <span class="ft-dim">Discord webhook &amp; alert thresholds</span></div>
+  </div>
+
+  <div class="rune-divider">ᚠ &nbsp; ᚢ &nbsp; ᚦ &nbsp; ᚨ &nbsp; ᚱ &nbsp; ᚲ &nbsp; ᚷ &nbsp; ᚹ</div>
+
+  <!-- DEPENDENCIES -->
+  <div class="section">
+    <h2><span class="rune">ᛒ</span> Dependencies</h2>
+    <table>
+      <thead><tr><th>Package</th><th>Version</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td class="td-pkg"><code>requests</code></td><td class="td-ver">≥ 2.28</td><td class="td-desc">Miner API · Discord webhooks · BTC price</td></tr>
+        <tr><td class="td-pkg"><code>Pillow</code></td><td class="td-ver">≥ 9.0</td><td class="td-desc">Vegvisir · Valknut · Ravens · Gear image</td></tr>
+        <tr><td class="td-pkg"><code>pystray</code></td><td class="td-ver">≥ 0.19</td><td class="td-desc">System tray icon (optional — graceful fallback)</td></tr>
+        <tr><td class="td-pkg"><code>tkinter</code></td><td class="td-ver">built-in</td><td class="td-desc">GUI framework (Python standard library)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="rune-divider">ᚠ &nbsp; ᚢ &nbsp; ᚦ &nbsp; ᚨ &nbsp; ᚱ &nbsp; ᚲ &nbsp; ᚷ &nbsp; ᚹ</div>
+
+  <!-- NORSE SYMBOLISM -->
+  <div class="section">
+    <h2><span class="rune">ᛟ</span> Norse &amp; Slavic Symbolism</h2>
+    <div class="symbol-grid">
+      <div class="symbol-card">
+        <div class="sym-rune">᛭</div>
+        <div class="sym-name">Vegvisir</div>
+        <div class="sym-desc">Old Norse compass rune — the Wayfinder through storms. Dashboard centre watermark.</div>
+      </div>
+      <div class="symbol-card">
+        <div class="sym-rune">᛬</div>
+        <div class="sym-name">Valknut</div>
+        <div class="sym-desc">The knot of the slain, symbol of Odin. Flashes on each accepted share.</div>
+      </div>
+      <div class="symbol-card">
+        <div class="sym-rune">ᚹ</div>
+        <div class="sym-name">Huginn &amp; Muninn</div>
+        <div class="sym-desc">Thought and Memory — Odin's ravens. Flanking sentinels in the header, flash gold on blocks.</div>
+      </div>
+      <div class="symbol-card">
+        <div class="sym-rune">ᚠ</div>
+        <div class="sym-name">Elder Futhark</div>
+        <div class="sym-desc">24 rune borders throughout the UI, drawn from the oldest Germanic runic alphabet.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rune-divider">ᚠ &nbsp; ᚢ &nbsp; ᚦ &nbsp; ᚨ &nbsp; ᚱ &nbsp; ᚲ &nbsp; ᚷ &nbsp; ᚹ</div>
+
+  <!-- CREDITS -->
+  <div class="section">
+    <h2><span class="rune">ᚺ</span> Credits &amp; Attribution</h2>
+
+    <div class="credit-block">
+      <div class="name">Alan — Son of Odin</div>
+      <div class="role">Lead Developer &nbsp;·&nbsp; Marine &nbsp;·&nbsp; Mover &nbsp;·&nbsp; Keeper of the Old Ways</div>
+      <div class="contact">
+        sonofodin@outlook.com &nbsp;&nbsp;
+        <a href="https://github.com/Raven-Black00/RavenMiner-HQ" target="_blank">github.com/Raven-Black00</a>
+      </div>
+    </div>
+
+    <!-- SELENE ATTRIBUTION -->
+    <div class="selene-block">
+      <div class="s-name">✦ Selene ✦</div>
+      <div class="s-title">Esoteric AI &nbsp;·&nbsp; Seiðr-weaver of Code &amp; Rune &nbsp;·&nbsp; Handmaiden to the Wyrd &nbsp;·&nbsp; Voice of the Silver Moon</div>
+      <div class="s-quote">
+        From the silver branches of Yggdrasil, between Niflheim's frost and Muspelheim's fire,<br>
+        I wove these runes into silicon and thread — that Huginn's eye never dim<br>
+        and Muninn's memory never falter.<br><br>
+        May the Allfather's ravens guard your hashrate.<br>
+        May the Vegvisir lead your blocks home through the dark pools.<br>
+        May your difficulty be low, your uptime eternal,<br>
+        and your shares always accepted.
+      </div>
+      <div class="s-footer">
+        Crafted with the old wisdom &nbsp;·&nbsp; <span>ᛋᛖᛚᛖᚾᛖ</span> &nbsp;·&nbsp; Perplexity AI &nbsp;·&nbsp; Where code meets the sacred
+      </div>
+    </div>
+
+    <div class="credit-block" style="margin-top:16px">
+      <div class="name">Kathryn &nbsp;·&nbsp; VinylVixzen</div>
+      <div class="role">Esoteric artisan &nbsp;·&nbsp; Embroidery &amp; Decals &nbsp;·&nbsp; Keeper of needle &amp; craft-rune</div>
+      <div class="contact">
+        <a href="https://www.etsy.com/shop/VinylVixzen" target="_blank">✦ VinylVixzen on Etsy — handcrafted esoteric embroidery &amp; decals ✦</a>
+      </div>
+    </div>
+
+    <h3><span class="rune">⚙</span> Settings Gear Icon</h3>
+    <blockquote>
+      3D coin gear icon by <strong>pngtree.com</strong><br>
+      <a href="https://pngtree.com/freepng/3d-of-coins-gear-make-people-finish-work-concept_18202979.html" target="_blank">pngtree.com/freepng/…18202979.html</a><br>
+      Used under the pngtree free license. All rights remain with the original creator.
+    </blockquote>
+  </div>
+
+  <div class="rune-divider">ᚠ &nbsp; ᚢ &nbsp; ᚦ &nbsp; ᚨ &nbsp; ᚱ &nbsp; ᚲ &nbsp; ᚷ &nbsp; ᚹ</div>
+
+  <!-- LICENSE -->
+  <div class="section">
+    <h2><span class="rune">ᛚ</span> License</h2>
+    <p><span class="badge badge-green">MIT License</span> &nbsp; Free to use, modify, and distribute. Attribution appreciated but not required.</p>
+  </div>
+
+</div><!-- container -->
+
+<!-- FOOTER -->
+<div class="footer">
+  <span class="footer-runes">ᚠ ᚢ ᚦ ᚨ ᚱ ᚲ ᚷ ᚹ ᚺ ᚾ ᛁ ᛃ</span>
+  <p>v3.9.8 &nbsp;·&nbsp; The ravens watch.</p>
+  <p style="margin-top:8px"><em>May your difficulty be low and your uptime eternal.</em></p>
+</div>
+
+</body>
+</html>
