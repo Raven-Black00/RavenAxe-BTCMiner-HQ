@@ -1,0 +1,26 @@
+# ============================================================
+# RAVENMINER HQ — requirements.txt
+# ᛟ OTHALA · The dependencies that hold the longhouse together
+# ============================================================
+
+# --- HTTP / API ---
+# CoinGecko BTC price feed & Discord webhook war-horn
+requests>=2.31.0
+
+# --- GUI ---
+# tkinter is bundled with CPython — no pip install needed.
+# If your distro ships Python without it:
+#   Ubuntu/Debian: sudo apt install python3-tk
+#   Fedora:        sudo dnf install python3-tkinter
+
+# --- Graphing (hashrate / ping history) ---
+matplotlib>=3.8.0
+
+# --- System Tray Daemon ---
+pystray>=0.19.5
+
+# --- Image handling (tray icon, Vegvisir watermark) ---
+Pillow>=10.3.0
+
+# --- Optional: packaging as a standalone executable ---
+# pyinstaller>=6.6.0

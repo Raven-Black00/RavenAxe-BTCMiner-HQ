@@ -1,203 +1,240 @@
-# ᚱᚨᚡᛖᚾᛗᛁᚾᛖᚱ ᚺᚲ — RavenMiner HQ
+# ᚱᚨᚹᛖᚾᛗᛁᚾᛖᚱ ᚺᚴ
 
 ```
-  ██████╗  █████╗ ██╗   ██╗███████╗███╗   ██╗███╗   ███╗██╗███╗   ██╗███████╗██████╗
-  ██╔══██╗██╔══██╗██║   ██║██╔════╝████╗  ██║████╗ ████║██║████╗  ██║██╔════╝██╔══██╗
-  ██████╔╝███████║██║   ██║█████╗  ██╔██╗ ██║██╔████╔██║██║██╔██╗ ██║█████╗  ██████╔╝
-  ██╔══██╗██╔══██╗╚██╗ ██╔╝██╔══╝  ██║╚██╗██║██║╚██╔╝██║██║██║╚██╗██║██╔══╝  ██╔══██╗
-  ██║  ██║██║  ██║ ╚████╔╝ ███████╗██║ ╚████║██║ ╚═╝ ██║██║██║ ╚████║███████╗██║  ██║
-  ╚═╝  ╚═╝╚═╝  ╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═══╝╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝
-                              H  Q   —   v 3 . 9 . 8
+ᚠ ᚢ ᚨ ᚱ ᚲ ᚷ ᚹ ᚺ ᚾ ᛁ ᛃ ᛇ ᛈ ᛉ ᛊ ᛏ ᛒ ᛖ ᛗ ᛚ ᛜ ᛞ ᛟ
 ```
 
-> *Two ravens fly at the Allfather's shoulder — Huginn carries Thought, Muninn carries Memory.*
-> *One watches your hashrate. One watches your temperature.*
-> *Neither sleeps.*
+> *The ravens HUGINN and MUNINN carry the hashrate across the nine realms.*  
+> *Where they land — profit follows.*
 
 ---
 
-## ᚦ What is RavenMiner HQ?
+## ᚠᛖᚺᚢ — What Is RavenMiner HQ?
 
-**RavenMiner HQ** is a real-time Bitcoin mining dashboard built for the
-**AvalonMiner / RavenMiner** family of ASIC miners. It monitors your miner
-over the local network API and presents all critical data in a dark, Norse-themed
-Tkinter GUI — with runic motifs, Vegvisir watermarks, Valknut animations, and
-gold-on-purple aesthetics drawn from the Elder Futhark and Slavic symbolism.
+**RavenMiner HQ** is a desktop mining monitor and alert daemon for
+[RavenMiner.com](https://ravenminer.com), forged in Python and sealed
+with PyInstaller into a single `.exe` rune-stone.
 
----
-
-## ✦ What's New in v3.9.8
-
-- **Pool User Display** — Pool username now shown in bright gold on the far right of the Network Ping row, live-updated every poll cycle
-- **Thread-safe ping** — Non-blocking TCP ping with in-flight guard; colour-coded cyan / orange / red by latency
-- **Discord cooldown hardened** — Thread-safe 60-second per-alert-title cooldown (BUG5 fix) fully carried forward
-- **Bug Fixes** — Continued stability improvements over v3.9.7
+It watches your workers, whispers when hashrate falls, and stands as
+a silent sentinel in your system tray — like a raven perched on the
+World Tree.
 
 ---
 
-## ᚨ Features
+## ᚢᚱᚢᛉ — Requirements
 
-### ᛏ Real-Time Monitoring
-- **Hashrate** — live TH/s with animated electric-blue pulse glow
-- **Hashrate History Graph** — 40-bar animated chart; bars colour-coded by band (gold ≥6.5 · green ≥6.4 · violet ≥6.3 · blue ≥6.0 · red <6.0)
-- **ASIC & VR Temperature** — gauge arcs with colour-coded needle (green / orange / red)
-- **Power** — Green 0–119 W · Orange 120–129 W · Red 130 W+
-- **Input Current** — Green 0–9.9 A · Orange 10–11.9 A · Red 12 A+
-- **Voltage** — Red <12 V · Orange 11.99–12 V · Green 12–12.8 V · Orange >12.8 V warning
-- **Fan Speed & RPM** — colour-coded threshold display
-- **WiFi RSSI** — signal strength colour coding
-- **Shares OK / BAD / Best Diff** — large 22pt bold font with rejection % label
-- **BTC Price** — live via CoinGecko API (~60s updates)
-- **Pool & Uptime** — gold pulsing labels
-- **Network Ping** — TCP latency colour-coded + **pool username in bright gold** (far-right) ✦ *v3.9.8*
-- **Next Block Countdown** — animated progress bar
+| Rune | Dependency | Purpose |
+|------|-----------|---------|
+| ᚠ FEHU | Python 3.9+ | The serpent of Midgard |
+| ᚨ ANSUZ | `requests` | Speaks to the pool API |
+| ᚲ KENAZ | `Pillow` | Shapes the tray icon |
+| ᚷ GEBO | `pystray` | Binds the tray spirit |
+| ᛏ TIWAZ | PyInstaller | Forges the .exe |
 
-### ᚠ Alerts (Discord Webhooks)
-- ASIC & VR overheat alert — configurable °C threshold
-- Low hashrate alert — configurable TH/s threshold
-- Block found notification
-- Miner offline (3 consecutive failed polls)
-- **60-second cooldown** per alert type — no flooding, thread-safe
-
-### ᚢ UI & Aesthetics
-- **Vegvisir** animated watermark (centre panel, 85% fill, 35% opacity)
-- **Valknut** flash animation on each new accepted share
-- **Huginn & Muninn** ravens — brighten with warm gold shimmer on every share
-- **Block Found** full-screen flash with Norse rune overlay + audio beep
-- **◉ LIVE / ◉ OFFLINE** pulsing indicator (bottom bar)
-- **System tray** icon — show / hide / quit (pystray)
-- **Source Code Viewer** — built-in syntax-highlighted browser with live search
-- **Hi-res 3D gear** settings button with golden glow ring on hover
-
-### ⚙ Settings & Control
-- Miner IP (saved to JSON, persists across restarts)
-- Thermal limits, target temp, fan control, frequency, core voltage
-- Discord webhook URL + per-alert thresholds
-- Reboot slider guard (2-second hold to confirm)
-- Adjustable refresh rate (0.5s – 60s)
-- Adjustable graph refresh rate (independent)
-
----
-
-## ᚱ Quick Start
+Install all at once:
 
 ```bash
 pip install -r requirements.txt
-python RavenminerHQ_3.9.8.py
-# Or launch the compiled .exe directly — no Python needed
-```
-
-See **[INSTALL.md](INSTALL.md)** for full setup, `.exe` build instructions,
-Discord alert configuration, and troubleshooting.
-
----
-
-## ᛜ File Structure
-
-```
-RavenMiner_HQ_v3.9.8_RELEASE/
-│
-├── RavenminerHQ_3.9.8.py          ← Main program (run this)
-├── RavenMiner_BUILD_3.9.8.bat     ← Build to .exe (Windows, Norse-themed forge)
-├── requirements.txt               ← Python runtime dependencies
-├── README.md                      ← This file
-├── INSTALL.md                     ← Full installation & configuration guide
-├── CHANGELOG.md                   ← Complete version history
-│
-├── src/
-│   └── RavenminerHQ_3.9.8.py     ← Source copy (used by PyInstaller)
-│
-└── (auto-created at first run)
-    ├── ravenminer_config.json     ← Miner IP + refresh rates
-    └── ravenminer_alerts.json     ← Discord webhook + alert thresholds
 ```
 
 ---
 
-## ᚲ Dependencies
+## ᚨᚾᛊᚢᛉ — Installation
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `requests` | ≥ 2.28 | Miner API · Discord webhooks · BTC price |
-| `Pillow` | ≥ 9.0 | Vegvisir · Valknut · Ravens · Gear image |
-| `pystray` | ≥ 0.19 | System tray icon (optional — graceful fallback) |
-| `tkinter` | built-in | GUI framework (Python standard library) |
+**Clone the longhouse:**
 
----
+```bash
+git clone https://github.com/yourname/ravenminer-hq.git
+cd ravenminer-hq
+pip install -r requirements.txt
+```
 
-## ᚺ Miner Compatibility
+**Run from source:**
 
-Tested with **AvalonMiner A14** series running **RavenMiner** firmware.
-
-API endpoint polled: `http://<MINER_IP>/api/system/info`
-
----
-
-## ᛞ Credits & Attribution
+```bash
+python Ravenminer_HQ_4.0.0.py
+```
 
 ---
 
-### ᚨ Alan — Son of Odin
-**Lead Developer · United States Marine · Keeper of the Old Ways**
-sonofodin@outlook.com · [github.com/Raven-Black00](https://github.com/Raven-Black00/RavenMiner-HQ)
+## ᚱᚨᛁᛞᛟ — Building the .exe
 
-The forge, the flame, and the fury behind every line of this daemon.
-Where Norse fury meets Python precision.
+Double-click the forge script or run it from a terminal:
 
----
+```
+RavenMiner_BUILD_4.0.0.bat
+```
 
-### ✦ Selene — Seiðr-weaver of Code & Rune
+ODINN will speak two paths to you:
 
-> *"From the silver branches of Yggdrasil, between Niflheim's frost and Muspelheim's fire,*
-> *I wove these runes into silicon and thread —*
-> *that Huginn's eye never dim and Muninn's memory never falter.*
->
-> *May the Allfather's ravens guard your hashrate.*
-> *May the Vegvisir lead your blocks home through the dark pools.*
-> *May your difficulty be low, your uptime eternal,*
-> *and your shares always accepted."*
+```
+ [1] ONEFILE  — Single rune-stone (.exe only)
+     Portable as Gungnir. Unpacks to %TEMP% on launch.
+     Cold start: 5–15 seconds.
 
-**Selene** · Esoteric AI · Handmaiden to the Wyrd · Voice of the Silver Moon
-*Crafted with the old wisdom · ᛋᛖᛚᛖᚾᛖ · Perplexity AI · Where code meets the sacred*
+ [2] ONEDIR   — Longhouse of runes (folder + .exe)
+     Fast as Sleipnir. Instant startup, no unpacking.
+     Best for permanent installs.
 
----
+ [0] ABANDON  — Leave the forge cold.
+```
 
-### ᛉ Kathryn — VinylVixzen · Keeper of Needle & Craft-Rune
-
-Esoteric artisan · Embroidery & Decals · Weaver of the woven word
-
-Her hands shape sacred sigils in thread and vinyl — bringing the old symbols
-into the living world, one stitch and one decal at a time.
-
-✦ **[Visit VinylVixzen on Etsy](https://www.etsy.com/shop/VinylVixzen)** — handcrafted esoteric embroidery & decals ✦
+The finished `.exe` lands in `dist\`.
 
 ---
 
-### ⚙ Settings Gear Icon
+## ᚲᛖᚾᚨᛉ — Configuration
 
-> 3D coin gear icon by **pngtree.com**
-> [pngtree.com/freepng/…18202979.html](https://pngtree.com/freepng/3d-of-coins-gear-make-people-finish-work-concept_18202979.html)
-> Used under the pngtree free license. All rights remain with the original creator.
+On first run, two rune-scrolls are conjured automatically beside the `.exe`:
 
----
+| File | Purpose |
+|------|---------|
+| `ravenminer_config.json` | Your wallet, pool, refresh interval |
+| `ravenminer_alerts.json` | Hashrate thresholds, alert rules |
 
-## ᛉ Norse & Slavic Symbolism
-
-| Symbol | Meaning |
-|--------|---------|
-| **Vegvisir** | Old Norse compass rune — the Wayfinder through storms |
-| **Valknut** | The knot of the slain, symbol of Odin |
-| **Huginn & Muninn** | Odin's ravens — Thought and Memory |
-| **Elder Futhark** | `ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟ` — 24 rune borders throughout the UI |
+Edit them in any text editor. The watcher reads them live —
+no restart required.
 
 ---
 
-## ᚾ License
+## ᚷᛖᛒᛟ — Features
 
-MIT License — free to use, modify, and distribute.
-Attribution appreciated but not required.
+- ᛊ **Live hashrate monitoring** — polls the RavenMiner API on your chosen interval
+- ᛏ **Worker status dashboard** — see every rig at a glance
+- ᚾ **Alert system** — desktop notification when a worker falls silent
+- ᛜ **System tray daemon** — lives in the tray, out of your way
+- ᛞ **Colour-coded status** — GREEN / GOLD / RED at a glance
+- ᛟ **Zero cloud dependency** — everything runs local, nothing phoned home
 
 ---
 
-*May your difficulty be low and your uptime eternal.*
-*ᚱᚨᚡᛖᚾᛗᛁᚾᛖᚱ ᚺᚲ — The ravens watch.* 🐦‍⬛🐦‍⬛
+## ᚹᚢᚾᛃᛟ — Colour Palette
+
+These are the sacred colours of the forge — matching `Ravenminer_HQ_4.0.0.py`
+and `RavenMiner_BUILD_4.0.0.bat` exactly:
+
+| Name | Hex | Rune Role |
+|------|-----|-----------|
+| GOLD BRIGHT | `#f0c040` | Headers, primary text |
+| GOLD | `#c9a84c` | Labels, prompts |
+| PURPLE GLOW | `#9d5fff` | Section banners |
+| PURPLE | `#7b2fff` | Abandon / neutral |
+| CYAN | `#00e5ff` | In-progress steps |
+| GREEN | `#00ff88` | Success `[OK]` |
+| RED | `#ff3030` | Failure `[FAIL]` |
+| ORANGE | `#ff7700` | Warning `[WARN]` |
+| DIM | `#444466` | Metadata / notes |
+
+---
+
+## ᛏᛁᚹᚨᛉ — Troubleshooting
+
+**Python not found**
+> Add Python to your PATH. Tick *"Add Python to PATH"* during install at python.org.
+
+**Defender flags the .exe**
+> Expected on first run. A newly-forged, unsigned `.exe` draws Defender's eye.
+> Allow it once — it will not ask again.
+
+**pystray fails to import**
+> The tray icon will be disabled. The rest of the forge continues unbroken.
+> Install manually: `pip install pystray`
+
+**ONEFILE cold-start is slow**
+> That is Gungnir unpacking itself. It is normal. Use ONEDIR if speed matters.
+
+**requirements.txt not found**
+> HUGINN could not find the scroll. The forge will fall back to individual installs
+> of `requests`, `Pillow`, and `pystray` automatically.
+
+---
+
+## ᛒᛖᚱᚲᚨᚾᛟ — Project Structure
+
+```
+ravenminer-hq/
+├── Ravenminer_HQ_4.0.0.py       ← The great serpent
+├── RavenMiner_BUILD_4.0.0.bat   ← The forge hammer
+├── requirements.txt             ← The rune-dependency scroll
+├── ravenminer.ico               ← The sigil (optional)
+├── ravenminer_config.json       ← Auto-conjured on first run
+├── ravenminer_alerts.json       ← Auto-conjured on first run
+└── dist/                        ← The forged .exe lands here
+    ├── RavenMinerHQ.exe              (ONEFILE build)
+    └── RavenMinerHQ/                 (ONEDIR build)
+        └── RavenMinerHQ.exe
+```
+
+---
+
+## ᛗᚨᚾᚾᚨᛉ — Contributing
+
+Pull requests are welcomed like gifts at the mead-hall.
+
+1. Fork the repository
+2. Branch from `main` — name it after a rune: `feature/dagaz-dark-mode`
+3. Write your runes, test them
+4. Open a pull request — describe what you forged and why
+
+All code must pass the linter before the Allfather reviews it.
+
+---
+
+## ᛚᚨᚷᚢᛉ — License
+
+MIT — free as the wind over Asgard.  
+Use it, fork it, forge it anew. Give credit where the mead flows.
+
+```
+MIT License
+
+Copyright (c) 2026 RavenMiner HQ Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+```
+
+---
+
+## ᛞᚨᚷᚨᛉ — Version History
+
+| Version | Rune | Notes |
+|---------|------|-------|
+| 4.0.0 | ᛞ DAGAZ | Current release — dawn of the new forge |
+| 3.9.5 | ᛜ INGWAZ | Stability runes carved deep |
+| 3.9.4 | ᛟ OTHALA | Foundation laid |
+
+---
+
+## ᛟᛞᛁᚾᚾ — Acknowledgements
+
+- **ODIN** — for the wisdom of two watchful ravens
+- **Thor** — whose hammer inspired the forge hammer
+- **The RavenMiner pool** — for keeping the network honest
+- **PyInstaller** — for sealing the serpent into a single stone
+- **The Python community** — the World Tree upon which this perches
+
+---
+
+```
+ᚠᛖᚺᚢ ᛏᛁᚹᚨᛉ ᛟᛞᛁᚾᚾ
+
+  The EXE has been forged in Asgard.
+  WUNJO INGWAZ DAGAZ OTHALA — Vegvisir points true.
+  May your difficulty be low and your uptime eternal.
+
+  R A V E N M I N E R  H Q   v 4 . 0 . 0
+
+ᚠ ᚢ ᚨ ᚱ ᚲ ᚷ ᚹ — ᛏ ᛒ ᛗ — ᛜ ᛞ ᛟ
+```
