@@ -406,8 +406,8 @@ class RavenMinerDash:
                 _RAVEN_R_PIL_CACHE = Image.open(io.BytesIO(base64.b64decode(RAVEN_R_B64))).convert("RGBA")
             rl = _RAVEN_L_PIL_CACHE.resize((raven_size, raven_size), Image.LANCZOS)
             rr = _RAVEN_R_PIL_CACHE.resize((raven_size, raven_size), Image.LANCZOS)
-            # FIX3: Only mirror the right raven so they face inward toward each other.
-            # The left raven (rl) already faces inward; flipping both made them face same way.
+            # Mirror left raven to face outward (leftward) — Huginn & Muninn fly outward
+            rl = rl.transpose(Image.FLIP_LEFT_RIGHT)
             rr = rr.transpose(Image.FLIP_LEFT_RIGHT)
             # v3.9.3: use natural alpha — no opacity reduction, background is transparent
             # apply alpha softness — must reassign since putalpha mutates in-place
@@ -461,8 +461,8 @@ class RavenMinerDash:
 
             _rkey = (raven_size, "flash")
             if not hasattr(self, "_raven_flash_base") or self._raven_flash_base[0] != _rkey:
-                # FIX4: Only mirror the right raven (matches fix in _draw_raven_pair)
-                _rl = _RAVEN_L_PIL_CACHE.resize((raven_size, raven_size), Image.LANCZOS)
+                # Mirror both ravens outward — matches _draw_raven_pair
+                _rl = _RAVEN_L_PIL_CACHE.resize((raven_size, raven_size), Image.LANCZOS).transpose(Image.FLIP_LEFT_RIGHT)
                 _rr = _RAVEN_R_PIL_CACHE.resize((raven_size, raven_size), Image.LANCZOS).transpose(Image.FLIP_LEFT_RIGHT)
                 self._raven_flash_base = (_rkey, _rl, _rr)
             rl = self._raven_flash_base[1].copy()
@@ -814,12 +814,18 @@ class RavenMinerDash:
                     r = r_out if i%2==0 else r_out-8
                     pts += [cx+r*math.cos(angle), cx+r*math.sin(angle)]
                 gear_cv.create_polygon(pts, fill=fill_col, outline=GOLD, width=1)
-            # shimmer arc sweeps around the gear
+            # shimmer arc sweeps around the gear — gold shimmer
             arc_start = (shimmer_phase * 12) % 360
-            for i, (arc_w, opacity) in enumerate([(8, 0.25),(5, 0.45),(2, 0.75)]):
+            # Pulsing gold base-glow ring
+            pulse = 0.30 + 0.25 * math.sin(shimmer_phase * math.pi / 15)
+            gi = int(150 + pulse * 70)
+            glow_col = f"#{int(gi):02x}{int(gi*0.76):02x}{int(gi*0.20):02x}"
+            gear_cv.create_oval(3, 3, _GEAR_SIZE-3, _GEAR_SIZE-3,
+                                outline=glow_col, width=2, fill="")
+            for i, (arc_w, opacity) in enumerate([(9, 0.30),(6, 0.55),(3, 0.92)]):
                 offset = i * 18
                 intensity = int(180 + opacity * 75)
-                shimmer_col = f"#{int(intensity*0.67):02x}{int(intensity*0.40):02x}{intensity:02x}"
+                shimmer_col = f"#{int(intensity):02x}{int(intensity*0.78):02x}{int(intensity*0.24):02x}"
                 gear_cv.create_arc(3, 3, _GEAR_SIZE-3, _GEAR_SIZE-3,
                                    start=(arc_start + offset) % 360, extent=55,
                                    style="arc", outline=shimmer_col, width=arc_w)
@@ -1947,14 +1953,32 @@ class SettingsWindow(tk.Toplevel):
         section(right, "THERMAL & FAN", thermal_specs,   CYAN)
         section(right, "DISPLAY",       display_specs,   GOLD)
 
+        # ── TEMP ALERTS ──────────────────────────────────────────────────────
+        tk.Frame(right, height=1, bg=PURPLE_DIM).pack(fill="x", pady=(10, 4))
+        tk.Label(right, text="TEMP ALERTS", font=("Courier", 10, "bold"),
+                 fg=RED, bg=COL_C).pack(anchor="w")
+        for _lbl, _key, _col in [
+                ("ASIC TEMP ALERT (°C)", "alert_temp_threshold",    RED),
+                ("VR TEMP ALERT (°C)",   "alert_vr_temp_threshold", ORANGE)]:
+            tk.Label(right, text=_lbl, font=("Courier", 10),
+                     fg=GOLD, bg=COL_C).pack(anchor="w", pady=(6, 0))
+            _e = tk.Entry(right, font=("Courier", 13, "bold"), bg=BG, fg=_col,
+                          relief="flat", insertbackground=_col,
+                          highlightthickness=1, highlightbackground=PURPLE_DIM,
+                          highlightcolor=PURPLE_GLOW)
+            _e.pack(fill="x", ipady=6)
+            self._fields[_key] = _e
+        tk.Label(right,
+                 text="Values above threshold trigger a Discord overtemp webhook.",
+                 font=("Courier", 8), fg=DIM, bg=COL_C).pack(anchor="w", pady=(2, 6))
+
+        # ── DISCORD ALERTS ────────────────────────────────────────────────────
         tk.Frame(right, height=1, bg=PURPLE_DIM).pack(fill="x", pady=(10, 4))
         tk.Label(right, text="DISCORD ALERTS", font=("Courier", 10, "bold"),
                  fg=PURPLE_GLOW, bg=COL_C).pack(anchor="w")
         for _lbl, _key, _col in [
-                ("Discord Webhook URL",       "discord_webhook",         PURPLE_GLOW),
-                ("ASIC Overheat Alert (°C)", "alert_temp_threshold",    RED),
-                ("VR Overheat Alert (°C)",   "alert_vr_temp_threshold", ORANGE),
-                ("Low Hashrate Alert (TH/s)", "alert_hash_threshold",    GOLD)]:
+                ("Discord Webhook URL",        "discord_webhook",      PURPLE_GLOW),
+                ("Low Hashrate Alert (TH/s)",  "alert_hash_threshold", GOLD)]:
             tk.Label(right, text=_lbl, font=("Courier", 10),
                      fg=GOLD, bg=COL_C).pack(anchor="w", pady=(6, 0))
             _e = tk.Entry(right, font=("Courier", 13, "bold"), bg=BG, fg=_col,
@@ -2234,6 +2258,8 @@ class SettingsWindow(tk.Toplevel):
             requests.post(f"http://{self.miner_ip}/api/system/restart", timeout=5)
             import tkinter.messagebox as mb
             mb.showinfo("Reboot", "Reboot command sent to miner.", parent=self)
+            self.destroy()  # Close settings window after successful reboot
+            return
         except Exception as ex:
             import tkinter.messagebox as mb
             mb.showerror("Reboot Error", str(ex), parent=self)
