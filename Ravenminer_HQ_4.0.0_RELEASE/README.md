@@ -12,7 +12,7 @@
 ## ᚠᛖᚺᚢ — What Is RavenMiner HQ?
 
 **RavenMiner HQ** is a desktop mining monitor and alert daemon for
-[RavenMiner.com](https://ravenminer.com), forged in Python and sealed
+NerdQaxe++, forged in Python and sealed
 with PyInstaller into a single `.exe` rune-stone.
 
 It watches your workers, whispers when hashrate falls, and stands as
