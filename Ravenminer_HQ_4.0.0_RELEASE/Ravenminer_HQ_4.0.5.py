@@ -119,6 +119,7 @@ API_URL  = "http://" + MINER_IP + "/api/system/info"
 REFRESH  = 0.25
 HR_REFRESH = 5.0
 PING_AVG_WINDOW = 5.0   # seconds of ping history to average (adjustable)
+AVG_WINDOW      = 10.0  # seconds rolling avg for INPUT CURR / VOLTAGE / CORE VOLT
 VERSION = "v4.0.1"  # v4.0.0: 50M difficulty milestone + new best diff Discord webhook alerts
 
 # ── App icon (pickaxe + bitcoin, transparent PNG, base64) ──
@@ -319,6 +320,7 @@ class RavenMinerDash:
         self._glow_loop()
         self._countdown_loop()
         self.root.after(200, self._runes_pulse)
+        self.root.after(4000, self._rune_fade_out)
         self._setup_tray()
 
     def _init_valknut(self):
@@ -544,12 +546,14 @@ class RavenMinerDash:
         # BUG#7 FIX (v3.9.5): removed dead call — _draw_vegvisir_bg is a pass stub,
         #   rendering is handled by _draw_vegvisir_centre scheduled elsewhere.
         hdr=tk.Frame(self.root,bg=PURPLE_DIM,height=70); hdr.place(relx=0,rely=0,relwidth=1)
-        tk.Label(hdr,text="\u16a2",font=("Segoe UI",34,"bold"),fg=GOLD_BRIGHT,bg=PURPLE_DIM).pack(side="left",padx=16)
+        self.lbl_top_rune = tk.Label(hdr,text="\u16a2",font=("Segoe UI",34,"bold"),fg=GOLD_BRIGHT,bg=PURPLE_DIM)
+        self.lbl_top_rune.pack(side="left",padx=16)
+        self._rune_idx = 0
         tf=tk.Frame(hdr,bg=PURPLE_DIM); tf.pack(side="left")
         self.lbl_runes=tk.Label(tf,text=RUNES_TITLE,font=("Segoe UI",24,"bold"),fg="#ffe87a",bg=PURPLE_DIM)
         self.lbl_runes.pack()
         self._runes_pulse_phase=0.0
-        tk.Label(tf,text="Huginn & Muninn  |  Thought & Memory",font=("Courier",11),fg=GOLD,bg=PURPLE_DIM).pack()
+        tk.Label(tf,text="Huginn & Muninn  |  Thought & Memory",font=("Courier",14),fg=GOLD,bg=PURPLE_DIM).pack()
         soo_frame = tk.Frame(hdr, bg=PURPLE_DIM)
         soo_frame.place(relx=0.5, rely=0.5, anchor="center")
         tk.Label(soo_frame, text="Son Of Odin      ᛋᛟᚾ  ᛟᚠ  ᛟᛞᛁᚾ",
@@ -634,6 +638,17 @@ class RavenMinerDash:
         _ping_avg_entry.pack(side="right", padx=(0,4), pady=12)
         _ping_avg_entry.bind("<Return>",   self._apply_ping_avg)
         _ping_avg_entry.bind("<FocusOut>", self._apply_ping_avg)
+        # Avg Window entry (INPUT CURR / VOLTAGE / CORE VOLT)
+        self.avg_window_var = tk.StringVar(value=f"{AVG_WINDOW:.1f}")
+        tk.Label(bottom, text="Avg (s)", font=("Courier", 8), fg=ORANGE, bg="#0a0018").pack(side="right", padx=(0,2))
+        _avg_window_entry = tk.Entry(bottom, textvariable=self.avg_window_var,
+                                     font=("Courier", 10, "bold"), fg=ORANGE, bg="#0a0018",
+                                     insertbackground=ORANGE, width=4, relief="flat",
+                                     highlightthickness=1, highlightcolor=ORANGE,
+                                     highlightbackground=PURPLE_DIM)
+        _avg_window_entry.pack(side="right", padx=(0,4), pady=12)
+        _avg_window_entry.bind("<Return>",   self._apply_avg_window)
+        _avg_window_entry.bind("<FocusOut>", self._apply_avg_window)
         tk.Label(bottom,text="REFRESH s:",font=("Courier",9),fg=GOLD,bg="#0a0018").pack(side="right",padx=(0,0))
         _live_stack=tk.Frame(bottom,bg="#0a0018")
         _live_stack.pack(side="right",padx=10,pady=2)
@@ -729,6 +744,9 @@ class RavenMinerDash:
         self.lbl_pool_user.pack(side='right', anchor='e', padx=(8, 0))
         self._ping_in_flight = False
         self._ping_history  = deque()  # rolling (timestamp, ms) pairs
+        self._volt_history  = deque()  # rolling (timestamp, V) pairs for 10s avg
+        self._curr_history  = deque()  # rolling (timestamp, A) pairs for 10s avg
+        self._vcore_history = deque()  # rolling (timestamp, mV) pairs for 10s avg
 
     def _build_right(self,p):
         self._section_title(p,RUNE_POWER+"POWER & HARDWARE",COL_R)
@@ -1444,6 +1462,55 @@ class RavenMinerDash:
             return
         self.root.after(55, self._runes_pulse)
 
+    _ELDER_FUTHARK = [
+        "\u16a0", "\u16a2", "\u16a6", "\u16a8",
+        "\u16b1", "\u16b2", "\u16b7", "\u16b9",
+        "\u16ba", "\u16be", "\u16c1", "\u16c3",
+        "\u16c7", "\u16c8", "\u16c9", "\u16ca",
+        "\u16cf", "\u16d2", "\u16d6", "\u16d7",
+        "\u16da", "\u16dc", "\u16de", "\u16df",
+    ]
+
+    def _rune_fade_out(self, step=0, steps=14):
+        """Fade current top-left rune to background colour, then swap to next."""
+        if getattr(self, 'paused', False):
+            self.root.after(4000, self._rune_fade_out)
+            return
+        t = step / steps
+        r = int(0xf0 * (1 - t) + 0x3d * t)
+        g = int(0xc0 * (1 - t) + 0x1a * t)
+        b = int(0x40 * (1 - t) + 0x7a * t)
+        try:
+            self.lbl_top_rune.config(fg=f"#{r:02x}{g:02x}{b:02x}")
+        except Exception:
+            return
+        if step < steps:
+            self.root.after(40, lambda: self._rune_fade_out(step + 1, steps))
+        else:
+            self._rune_idx = (self._rune_idx + 1) % len(self._ELDER_FUTHARK)
+            self.lbl_top_rune.config(text=self._ELDER_FUTHARK[self._rune_idx])
+            self.root.after(40, self._rune_fade_in)
+
+    def _rune_fade_in(self, step=0, steps=14):
+        """Fade new rune in from background colour to GOLD_BRIGHT."""
+        if getattr(self, 'paused', False):
+            self.root.after(4000, self._rune_fade_out)
+            return
+        t = step / steps
+        r = int(0x3d * (1 - t) + 0xf0 * t)
+        g = int(0x1a * (1 - t) + 0xc0 * t)
+        b = int(0x7a * (1 - t) + 0x40 * t)
+        try:
+            self.lbl_top_rune.config(fg=f"#{r:02x}{g:02x}{b:02x}")
+        except Exception:
+            return
+        if step < steps:
+            self.root.after(40, lambda: self._rune_fade_in(step + 1, steps))
+        else:
+            self.lbl_top_rune.config(fg=GOLD_BRIGHT)
+            self.root.after(4500, self._rune_fade_out)
+
+
     def _start_live_pulse(self):
         self._is_online = True
         self._reboot_pending = False  # v4.0.1 clear on reconnect
@@ -1668,17 +1735,45 @@ class RavenMinerDash:
         pwr=(d.get("power") or 0)
         # v3.9.3: green 0-120W, orange 120-130W, red 130W+
         self.lbl_power.config(text=str(round(pwr,1))+" W",fg=RED if pwr>=130 else ORANGE if pwr>=120 else GREEN)
-        # v3.9.3: green 0-10A, orange 10-12A, red 12A+
-        _cur=round((d.get("currentA") or 0),2)
+        # v4.0.4: 10-second rolling average for INPUT CURRENT
+        _cur_raw = round((d.get("currentA") or 0), 2)
+        _cnow = time.time()
+        self._curr_history.append((_cnow, _cur_raw))
+        _ccutoff = _cnow - AVG_WINDOW
+        while self._curr_history and self._curr_history[0][0] < _ccutoff:
+            self._curr_history.popleft()
+        _cur = round(sum(v for _, v in self._curr_history) / len(self._curr_history), 2) if self._curr_history else _cur_raw
         self.lbl_current.config(text=str(_cur)+" A",fg=RED if _cur>=12 else ORANGE if _cur>=10 else GREEN)
         self._draw_gauge(self.curr_gauge_canvas, _cur, ORANGE, warn=10.0, crit=12.0, lo=0.0, hi=15.0, curr_mode=True)
         # v3.9.3: red <12V, orange 11.99-12V, green 12-12.8V, orange 12.8-13.1V, red 13.1V+
-        _vlt=round((d.get("voltage") or 0)/1000,2)
+        # 10-second rolling average for voltage display
+        _vlt_raw = round((d.get("voltage") or 0)/1000, 2)
+        _vnow = time.time()
+        self._volt_history.append((_vnow, _vlt_raw))
+        _vcutoff = _vnow - AVG_WINDOW
+        while self._volt_history and self._volt_history[0][0] < _vcutoff:
+            self._volt_history.popleft()
+        _vlt = round(sum(v for _, v in self._volt_history) / len(self._volt_history), 2) if self._volt_history else _vlt_raw
         _vlt_fg=(RED if _vlt<11.8 else ORANGE if _vlt<12.0 else GREEN if _vlt<12.8 else ORANGE if _vlt<13.1 else RED)
         self.lbl_voltage.config(text=str(_vlt)+" V",fg=_vlt_fg)
         self._draw_gauge(self.volt_gauge_canvas, _vlt, GREEN, warn=11.9, crit=11.5, lo=10.0, hi=13.5, voltage_mode=True)
         self.lbl_freq.config(text=str(d.get("frequency","--"))+" MHz")
-        self.lbl_vcore.config(text=str(d.get("coreVoltageActual","--"))+" mV")
+        # v4.0.4: 10-second rolling average for CORE VOLT
+        _vc_raw = d.get("coreVoltageActual")
+        if _vc_raw is not None:
+            try:
+                _vc_raw = float(_vc_raw)
+                _vnow2 = time.time()
+                self._vcore_history.append((_vnow2, _vc_raw))
+                _vccutoff = _vnow2 - AVG_WINDOW
+                while self._vcore_history and self._vcore_history[0][0] < _vccutoff:
+                    self._vcore_history.popleft()
+                _vcore = round(sum(v for _, v in self._vcore_history) / len(self._vcore_history), 1) if self._vcore_history else _vc_raw
+                self.lbl_vcore.config(text=str(_vcore)+" mV")
+            except (TypeError, ValueError):
+                self.lbl_vcore.config(text="-- mV")
+        else:
+            self.lbl_vcore.config(text="-- mV")
         fan=(d.get("fanspeed") or 0)
         self.lbl_fan.config(text=str(fan)+" %",fg=RED if fan>90 else ORANGE if fan>70 else GREEN)
         self.lbl_fanrpm.config(text=str(d.get("fanrpm","--"))+" rpm")
@@ -1759,6 +1854,24 @@ class RavenMinerDash:
             self.ping_avg_var.set(f"{val:.1f}")
         except (ValueError, TypeError):
             self.ping_avg_var.set(f"{PING_AVG_WINDOW:.1f}")
+
+    def _apply_avg_window(self, event=None):
+        """Set the rolling-average window (seconds) for CURR, VOLTAGE & CORE VOLT.
+        Allowed range: 1.0 – 10.0 s in 0.1 steps.
+        """
+        global AVG_WINDOW
+        try:
+            val = round(max(1.0, min(10.0, round(float(self.avg_window_var.get()), 1))), 1)
+            AVG_WINDOW = val
+            # Immediately trim history buffers to the new (shorter) window
+            import time as _t2
+            _cutoff = _t2.time() - AVG_WINDOW
+            for hist in (self._curr_history, self._volt_history, self._vcore_history):
+                while hist and hist[0][0] < _cutoff:
+                    hist.popleft()
+            self.avg_window_var.set(f"{val:.1f}")
+        except (ValueError, TypeError, AttributeError):
+            self.avg_window_var.set(f"{AVG_WINDOW:.1f}")
 
     def _apply_hr_refresh(self, event=None):
         global HR_REFRESH
