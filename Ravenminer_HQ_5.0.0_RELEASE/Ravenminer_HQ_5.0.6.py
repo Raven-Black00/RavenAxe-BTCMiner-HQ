@@ -883,7 +883,7 @@ class RavenMinerDash:
 
     def _build_right(self,p):
         self._section_title(p,RUNE_POWER+"POWER & HARDWARE",COL_R)
-        self._stat_block(p,"POWER","--","W",RED,"lbl_power",COL_R)
+        self._stat_block(p,"POWER (650w PSU)","--","W",GREEN,"lbl_power",COL_R)
         self._divider(p)
         self._stat_block(p,"INPUT CURR","--","A",ORANGE,"lbl_current",COL_R)
         self._divider(p)
@@ -895,7 +895,7 @@ class RavenMinerDash:
         self._divider(p)
         self._stat_block(p,"FAN SPEED","--","%",WHITE,"lbl_fan",COL_R)
         self._divider(p)
-        self._stat_block(p,"FAN RPM","--","rpm",DIM,"lbl_fanrpm",COL_R)
+        self._stat_block(p,"FAN RPM","--","rpm",RED,"lbl_fanrpm",COL_R)
         self._divider(p)
         tk.Frame(p,height=2,bg=GOLD).pack(fill="x",pady=8)
         tk.Label(p,text="\u16a0  BTC PRICE  \u16a0",font=("Segoe UI",14),fg=GOLD,bg=COL_R).pack()
@@ -1080,8 +1080,8 @@ class RavenMinerDash:
             bands=[
                 (0,    8.0,  GREEN),
                 (8.0,  10.0, ORANGE),
-                (10.0, 12.0, RED),
-                (12.0, hi,   "#ff2200"),
+                (10.0, 12.0, ORANGE),
+                (12.0, hi,   ORANGE),
             ]
             for b_lo, b_hi, bcol in bands:
                 b_lo=max(b_lo,lo)
@@ -1112,12 +1112,12 @@ class RavenMinerDash:
                 a=_ang(vr)
                 lx=cx+(r+26)*math.cos(a)
                 ly=cy-(r+26)*math.sin(a)
-                lbl_col=GREEN if vr<8 else ORANGE if vr<10 else RED
+                lbl_col=GREEN if vr<8 else ORANGE
                 c.create_text(lx,ly,text=str(int(vr)),fill=lbl_col,font=("Courier",7,"bold"))
                 v=round(v+1.0,1)
             # needle
             pct=min(max((temp-lo)/span,0),1)
-            color=GREEN if temp<8 else ORANGE if temp<10 else RED
+            color=GREEN if temp<8 else ORANGE
             ar=math.radians(210-240*pct)
             c.create_line(cx,cy,cx+(r-10)*math.cos(ar),cy-(r-10)*math.sin(ar),fill=GOLD_BRIGHT,width=3)
             c.create_oval(cx-5,cy-5,cx+5,cy+5,fill=GOLD,outline="")
@@ -1816,12 +1816,14 @@ class RavenMinerDash:
         freq   = (d.get("freq")   or 0)
         fan    = (d.get("fanspeed") or 0)
         self.lbl_power.config(text=str(pwr)  + " W",
-            fg=RED if pwr > 1500 else ORANGE if pwr > 1300 else GREEN)
+            fg=RED if pwr >= 590 else ORANGE if pwr >= 500 else GREEN)
         self.lbl_freq.config(text=str(freq)  + " MHz")
         self.lbl_fan.config( text=str(fan)   + " %",
             fg=RED if fan > 90 else ORANGE if fan > 70 else GREEN)
         fan_rpm = d.get("fanrpm", "--")
-        self.lbl_fan_rpm.config(text=str(fan_rpm) + " rpm")
+        _rfpm = fan_rpm if isinstance(fan_rpm, (int, float)) else 0
+        self.lbl_fan_rpm.config(text=str(fan_rpm) + " rpm",
+            fg=RED if _rfpm < 2000 else ORANGE if _rfpm < 2800 else GREEN)
 
     def _upd_hashrate(self, d: dict):
         """Update hashrate label, averages and trigger graph redraw."""
@@ -1963,7 +1965,7 @@ class RavenMinerDash:
         self._trigger_ping()  # v3.9.5: fire non-blocking TCP ping
         pwr=(d.get("power") or 0)
         # v3.9.3: green 0-120W, orange 120-130W, red 130W+
-        self.lbl_power.config(text=str(round(pwr,1))+" W",fg=RED if pwr>=130 else ORANGE if pwr>=120 else GREEN)
+        self.lbl_power.config(text=str(round(pwr,1))+" W",fg=RED if pwr>=590 else ORANGE if pwr>=500 else GREEN)
         # v4.0.4: 10-second rolling average for INPUT CURRENT
         _cur_raw = round((d.get("currentA") or 0), 2)
         _cnow = time.time()
@@ -1972,7 +1974,7 @@ class RavenMinerDash:
         while self._curr_history and self._curr_history[0][0] < _ccutoff:
             self._curr_history.popleft()
         _cur = round(sum(v for _, v in self._curr_history) / len(self._curr_history), 2) if self._curr_history else _cur_raw
-        self.lbl_current.config(text=str(_cur)+" A",fg=RED if _cur>=12 else ORANGE if _cur>=10 else GREEN)
+        self.lbl_current.config(text=str(_cur)+" A",fg=ORANGE if _cur>=10 else GREEN)
         self._draw_gauge(self.curr_gauge_canvas, _cur, ORANGE, warn=10.0, crit=12.0, lo=0.0, hi=15.0, curr_mode=True)
         # v3.9.3: red <12V, orange 11.99-12V, green 12-12.8V, orange 12.8-13.1V, red 13.1V+
         # 10-second rolling average for voltage display
@@ -2005,7 +2007,9 @@ class RavenMinerDash:
             self.lbl_vcore.config(text="-- mV")
         fan=(d.get("fanspeed") or 0)
         self.lbl_fan.config(text=str(fan)+" %",fg=RED if fan>90 else ORANGE if fan>70 else GREEN)
-        self.lbl_fanrpm.config(text=str(d.get("fanrpm","--"))+" rpm")
+        _rfpm2 = d.get("fanrpm") or 0
+        self.lbl_fanrpm.config(text=str(d.get("fanrpm","--"))+" rpm",
+            fg=RED if _rfpm2 < 2000 else ORANGE if _rfpm2 < 2800 else GREEN)
         with self._btc_lock:
             _btc_snap=self.btc
         self.lbl_btc.config(text="$"+format(_btc_snap,",.0f") if _btc_snap else "--")
