@@ -1,0 +1,42 @@
+# ============================================================
+#  RAVENMINER HQ — requirements.txt
+#  ᛟ OTHALA · The dependencies that hold the longhouse together
+#
+#  Forged by: Alan Klusacek
+#  Version:   5.0.5
+# ============================================================
+
+# ── HTTP / API ────────────────────────────────────────────────
+# CoinGecko BTC price feed, NerdQaxe++ REST API, Discord war-horn
+requests>=2.31.0
+
+# ── GUI ───────────────────────────────────────────────────────
+# tkinter is bundled with CPython — no pip install needed.
+#
+# If your distro ships Python without it:
+#   Ubuntu / Debian:  sudo apt install python3-tk
+#   Fedora / RHEL:    sudo dnf install python3-tkinter
+#   Arch:             sudo pacman -S tk
+#   macOS (Homebrew): brew install python-tk
+
+# ── System Tray Daemon ────────────────────────────────────────
+# Binds the unseen watcher to the taskbar spirit
+pystray>=0.19.5
+
+# ── Image Handling ────────────────────────────────────────────
+# Tray icon forge, Vegvisir watermark, Valknútr animation
+Pillow>=10.3.0
+
+# ── Optional: Standalone Executable ──────────────────────────
+# Seals the serpent into a single rune-stone (.exe)
+# Uncomment to install:
+# pyinstaller>=6.6.0
+
+# ── Notes ─────────────────────────────────────────────────────
+# matplotlib is NOT required — the hashrate bar graph is drawn
+# directly on a tk.Canvas with native Tkinter primitives.
+# No external graphing library is needed.
+#
+# All alert config is written to ravenminer_alerts.json
+# All miner config is written to ravenminer_config.json
+# Both are auto-conjured beside the .exe on first run.
