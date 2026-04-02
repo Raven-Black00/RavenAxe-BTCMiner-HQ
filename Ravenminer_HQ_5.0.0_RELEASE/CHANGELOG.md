@@ -11,6 +11,44 @@
 
 ---
 
+## [5.0.6] — ᚠ FEHU · The Forge Knows Its Limits
+
+> *The gauges were redrawn to match the iron of the hall.*  
+> *Red was banished where it did not belong.*  
+> *The PSU spoke, and the codeforge listened.*
+
+**Forged by:** Alan Klusacek · Refined by: Perplexity AI
+
+### ✦ Changed
+
+- **ᚠ FEHU — Current Gauge Red Zone Removed (650 W PSU)**  
+  The CURRENT gauge arc bands previously showed `RED` from 10–12 A and `#ff2200`
+  from 12 A to the hi rail. Both zones are now `ORANGE` — the gauge runs
+  GREEN (0–8 A) → ORANGE (8 A+). Red was never reachable on a 650 W PSU and
+  only created false alarm fatigue.  
+  Tick labels and needle colour updated to match: `GREEN if < 8 A else ORANGE`.
+
+- **ᚠ FEHU — INPUT CURR Stat Block Red Zone Removed**  
+  Live `lbl_current` text colour previously went `RED` above 12 A.  
+  Now caps at `ORANGE` above 10 A / `GREEN` below. Consistent with gauge.
+
+- **ᛈ PERTH — POWER Display Thresholds Reforged for 650 W PSU**  
+  Power stat block label renamed `POWER (650w PSU)` so the capacity is always
+  visible at a glance.  
+  Colour thresholds rewritten across both live-update paths:  
+  `GREEN` 1–499 W · `ORANGE` 500–589 W · `RED` 590 W+  
+  *(Previous thresholds of 120 W / 130 W were calibrated for a different rig.)*
+
+- **ᛚ LAGUZ — FAN RPM Colourised**  
+  `FAN RPM` stat block value was previously painted flat `DIM` (grey) at all
+  speeds. Colour now reflects fan health:  
+  `RED` below 2000 RPM · `ORANGE` 2000–2799 RPM · `GREEN` 2800+ RPM  
+  Both the `updpowermetrics` path (`lbl_fan_rpm`) and the main display loop
+  (`lbl_fanrpm`) use identical thresholds — no flicker between paths.  
+  Initial/idle colour changed from `DIM` → `RED` (0 RPM = red zone at startup).
+
+---
+
 ## [5.0.5] — ᛗ MANNAZ · The Milestone Reborn
 
 > *What was noisy became precise. What fired in chaos now fires with purpose.*  
