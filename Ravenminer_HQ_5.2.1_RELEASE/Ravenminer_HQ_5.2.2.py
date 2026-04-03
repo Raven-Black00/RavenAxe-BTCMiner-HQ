@@ -789,10 +789,10 @@ class RavenMinerDash:
         _live_stack.pack(side="right",padx=10,pady=2)
         self.lbl_live=tk.Label(_live_stack,text="◉  LIVE",font=("Courier",16,"bold"),fg=GOLD_BRIGHT,bg="#0a0018")
         self.lbl_live.pack(side="top",pady=(4,4))
-        self.lbl_status=tk.Label(bottom,text="Connecting...",font=("Courier",10),fg=GOLD,bg="#0a0018",anchor="w")
-        self.lbl_status.pack(side="left",fill="x",expand=True,padx=10,pady=4)
-        self.lbl_version=tk.Label(bottom,text="",font=("Courier",10),fg=GOLD,bg="#0a0018")
-        self.lbl_version.pack(side="right",padx=10,pady=4)
+        # lbl_status removed — bottom gold Updated line hidden (v5.2.2)
+        # self.lbl_status.pack(side='left',fill='x',expand=True,padx=10,pady=4)
+        # lbl_version removed — bottom info line hidden (v5.2.2)
+        # self.lbl_version.pack(side='right',padx=10,pady=4)
         self._tick_clock()
         self._last_data_time = 0
         self._pulse_phase = 0.0
@@ -1955,7 +1955,7 @@ class RavenMinerDash:
                 return True
         except Exception as e:
             err=str(e)[:60]
-            self.root.after(0,lambda: self.lbl_status.config(text="Error: "+err,fg=RED))
+            self.root.after(0,lambda: getattr(self,'lbl_status',None) and self.lbl_status.config(text="Error: "+err,fg=RED))
         # BUG#10 FIX (v5.0.4): count first; require 3 consecutive failures
         # before declaring offline so a single timeout or brief JSON hiccup
         # right after reboot does not permanently freeze CONNECTION LOST.
@@ -2230,15 +2230,15 @@ class RavenMinerDash:
                 fg=RED if _fan_pct >= 90 else ORANGE if _fan_pct >= 70 else GREEN)
             self.fan_anim_speed = max(0.0, float(_fan_pct) * 0.18)  # v5.1.4
         except Exception: pass
-        hostname=d.get("hostname","").upper()
-        self.lbl_version.config(text=hostname+"  |  "+d.get("ASICModel","")+"  |  "+d.get("version","")+"  |  ESC to quit")
+        # hostname/version line removed (v5.2.2)
+        # self.lbl_version.config(text=hostname+...)
         # Firmware version — bright gold header label
         _fw = d.get("firmwareVersion", "") or d.get("version", "") or "--"
         self.lbl_firmware.config(text=f"Firmware: {_fw}")
-        self.lbl_status.config(
-            text="Updated: "+time.strftime("%H:%M:%S")+"  |  Blocks: "+str(new_blocks),fg=GOLD)
-        try: getattr(self,"lbl_refresh_stat",None) and self.lbl_refresh_stat.config(text=f"{REFRESH:.2f} s")
-        except Exception as _e: print(f"[RavenMiner] ignored error: {_e}")  # STYLE-04
+        # lbl_status update removed (v5.2.2)
+        # self.lbl_status.config(
+        #     text='Updated: '+time.strftime('%H:%M:%S')+'  |  Blocks: '+str(new_blocks),fg=GOLD)
+        # (lbl_status.config try/except removed with widget — v5.2.2)
         try: getattr(self,"lbl_hr_refresh_stat",None) and self.lbl_hr_refresh_stat.config(text=f"{HR_REFRESH:.2f} s")
         except Exception as _e: print(f"[RavenMiner] ignored error: {_e}")  # STYLE-04
         # v3.9.3: cached alert config — no disk I/O every tick
@@ -2276,9 +2276,9 @@ class RavenMinerDash:
                 # FIX5: Use the live settings IP from _cfg if available, fallback to global
                 _target_ip = self._cfg.get("minerip", MINER_IP) if hasattr(self, "_cfg") else MINER_IP
                 _req.post(f"http://{_target_ip}/api/system/restart", timeout=5)
-                self.lbl_status.config(text="Reboot command sent.", fg=ORANGE)
+                getattr(self,'lbl_status',None) and self.lbl_status.config(text="Reboot command sent.", fg=ORANGE)
             except Exception as e:
-                self.lbl_status.config(text="Reboot failed: " + str(e)[:60], fg=RED)
+                getattr(self,'lbl_status',None) and self.lbl_status.config(text="Reboot failed: " + str(e)[:60], fg=RED)
 
     def _apply_refresh(self, event=None):
         global REFRESH
