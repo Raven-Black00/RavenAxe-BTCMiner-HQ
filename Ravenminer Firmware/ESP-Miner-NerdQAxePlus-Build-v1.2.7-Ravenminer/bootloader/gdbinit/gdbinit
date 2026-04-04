@@ -1,0 +1,2 @@
+source /home/builder/project/build/bootloader/gdbinit/symbols
+source /home/builder/project/build/bootloader/gdbinit/connect
