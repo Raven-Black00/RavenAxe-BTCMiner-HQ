@@ -1,0 +1,13 @@
+# Target labels
+ web_ui_dist
+# Source files and their labels
+/home/builder/project/build/esp-idf/main/CMakeFiles/web_ui_dist
+/home/builder/project/build/esp-idf/main/CMakeFiles/web_ui_dist.rule
+/home/builder/project/build/esp-idf/main/CMakeFiles/web_ui_dist-complete.rule
+/home/builder/project/build/web_ui_dist/src/web_ui_dist-stamp/web_ui_dist-build.rule
+/home/builder/project/build/web_ui_dist/src/web_ui_dist-stamp/web_ui_dist-configure.rule
+/home/builder/project/build/web_ui_dist/src/web_ui_dist-stamp/web_ui_dist-download.rule
+/home/builder/project/build/web_ui_dist/src/web_ui_dist-stamp/web_ui_dist-install.rule
+/home/builder/project/build/web_ui_dist/src/web_ui_dist-stamp/web_ui_dist-mkdir.rule
+/home/builder/project/build/web_ui_dist/src/web_ui_dist-stamp/web_ui_dist-patch.rule
+/home/builder/project/build/web_ui_dist/src/web_ui_dist-stamp/web_ui_dist-update.rule
