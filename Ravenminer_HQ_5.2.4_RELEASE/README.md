@@ -19,7 +19,7 @@ It watches your miner, whispers when hashrate falls, screams to your phone
 when blocks are found, and stands as a silent sentinel in your system tray —
 like a raven perched on the World Tree.
 
-**Current version: 5.2.1**
+**Current version: 5.2.10**
 
 ---
 
@@ -46,15 +46,15 @@ pip install -r requirements.txt
 **Clone the longhouse:**
 
 ```bash
-git clone https://github.com/yourname/ravenminer-hq.git
-cd ravenminer-hq
+git clone https://github.com/Raven-Black00/RavenAxe-BTCMiner-HQ.git
+cd RavenAxe-BTCMiner-HQ
 pip install -r requirements.txt
 ```
 
 **Run from source:**
 
 ```bash
-python Ravenminer_HQ_5.2.1.py
+python Ravenminer_HQ_5_2_10.py
 ```
 
 ---
@@ -63,7 +63,7 @@ python Ravenminer_HQ_5.2.1.py
 
 ```bash
 pip install pyinstaller
-pyinstaller --onefile --windowed --icon=assets/huginn.ico Ravenminer_HQ_5.2.1.py
+pyinstaller --onefile --windowed --icon=assets/huginn.ico Ravenminer_HQ_5_2_10.py
 ```
 
 The finished `.exe` lands in `dist\`.
@@ -87,7 +87,7 @@ no restart required.
 ## ᚷᛖᛒᛟ — Features
 
 - ᛊ **Live hashrate monitoring** — polls the NerdQaxe API on your chosen interval
-- ᛏ **Worker status dashboard** — temperatures, power, frequency, fan RPM at a glance
+- ᛏ **Five-gauge instrument panel** — ASIC temp, VR temp, Voltage, Current, with analogue arcs
 - ᚾ **Push alert system (ntfy.sh)** — native phone notifications, no Discord required
 - ᛜ **System tray daemon** — lives in the tray, out of your way
 - ᛞ **Colour-coded status** — GREEN / GOLD / RED / ORANGE at a glance
@@ -97,12 +97,18 @@ no restart required.
 - 🐦‍⬛ **Huginn & Muninn** — animated raven pair, always watching
 - ᚹ **Vegvisir watermark** — the wayfinding sigil, always present
 - ᛟ **Zero cloud dependency** — everything runs local, ntfy is optional
+- 📶 **WiFi RSSI + SSID display** — signal strength and network name live
+- 💨 **Fan speed % display** — colour-coded fan load indicator
+- 🔄 **Rolling average window** — configurable AVGWINDOW for current & voltage
+- 🔵 **Best-Diff blue breathe** — animated pulse + red bounce on new personal best
+- ᚠ **Flanking rune animation** — Elder Futhark cycles flank the Best-Diff counter
+- 📜 **Source code viewer** — syntax-highlighted in-app reader
 
 ---
 
 ## ⚡ ntfy.sh Push Notifications
 
-RavenMiner HQ v5.2.1 replaces Discord with **ntfy.sh** for push alerts.
+RavenMiner HQ v5.2.10 uses **ntfy.sh** for push alerts.
 
 **30-second setup:**
 1. Install the ntfy app on your phone
@@ -122,10 +128,11 @@ and nothing leaves your network.
 | GOLD BRIGHT | `#f0c040` | Headers, primary text |
 | GOLD | `#c9a84c` | Labels, prompts |
 | PURPLE GLOW | `#9d5fff` | Section banners |
-| CYAN | `#00e5ff` | In-progress / ping |
-| GREEN | `#00ff88` | Success / good values |
+| CYAN | `#00e5ff` | In-progress / ping / VR gauge |
+| GREEN | `#00ff88` | Success / good values / voltage gauge |
+| BLUE | `#00aaff` | Best-Diff counter |
 | RED | `#ff3030` | Failure / critical |
-| ORANGE | `#ff7700` | Warning / elevated |
+| ORANGE | `#ff7700` | Warning / elevated / current gauge |
 
 ---
 
@@ -143,13 +150,20 @@ and nothing leaves your network.
 **ntfy test passes but no phone notification**
 > Confirm the ntfy app is subscribed to your exact topic name (case-sensitive).
 
+**WiFi RSSI shows `---`**
+> Your NerdQaxe firmware may not expose `wifiRSSI` — update firmware or ignore.
+
+**Voltage / Current gauges show 0**
+> Confirm `coreVoltageActual` and `currentA` are present in your miner's
+> `/api/system/info` response. Only NerdQaxe++ firmware exposes these fields.
+
 ---
 
 ## ᛒᛖᚱᚲᚨᚾᛟ — Project Structure
 
 ```
-ravenminer-hq/
-├── Ravenminer_HQ_5.2.1.py    ← The great serpent
+RavenAxe-BTCMiner-HQ/
+├── Ravenminer_HQ_5_2_10.py   ← The great serpent
 ├── requirements.txt           ← The rune-dependency scroll
 ├── ravenminer_config.json     ← Auto-conjured on first run
 ├── ravenminer_alerts.json     ← Auto-conjured on first run
@@ -183,7 +197,12 @@ Use it, fork it, forge it anew. Give credit where the mead flows.
 
 | Version | Rune | Notes |
 |---------|------|-------|
-| 5.2.1 | ᚱ RAIDHO | Dead code purged · debug prints removed · credentials leak sealed |
+| 5.2.10 | ᛟ OTHALA | Voltage + current gauges · WiFi · fan % · source viewer · avg window |
+| 5.2.9 | ᛏ TIWAZ | Reboot slide-to-confirm · instant isonline=False |
+| 5.2.8 | ᛒ BERKANO | Best-Diff blue breathe · red bounce · #00aaff label |
+| 5.2.5 | ᚺ HAGALAZ | Flanking rune animation · CONNECTION LOST on startup |
+| 5.2.2 | ᛃ JERA | lblstatus widget removed |
+| 5.2.1 | ᚱ RAIDHO | Dead code purged · debug prints · credentials leak sealed |
 | 5.2.0 | ᚨ ANSUZ | ntfy.sh replaces Discord · raven fix · 5 bugs slain |
 | 4.0.0 | ᛞ DAGAZ | Milestone alerts · clickable email header |
 | 3.9.9 | ᛟ OTHALA | Rolling ping · thread-safety hardening |
@@ -209,6 +228,6 @@ Use it, fork it, forge it anew. Give credit where the mead flows.
 ```
 ᚠᛖᚺᚢ ᛏᛁᚹᚨᛉ ᛟᛞᛁᚾᚾ
   The forge burns eternal.
-  R A V E N M I N E R  H Q   v 5 . 2 . 0
+  R A V E N M I N E R  H Q   v 5 . 2 . 1 0
 ᚠ ᚢ ᚨ ᚱ ᚲ ᚷ ᚹ — ᛏ ᛒ ᛗ — ᛜ ᛞ ᛟ
 ```

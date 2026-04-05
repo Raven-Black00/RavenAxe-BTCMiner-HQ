@@ -2,132 +2,220 @@
 
 ---
 
+## [5.2.10] — ᛟ OTHALA · The Longhouse Complete
+*April 5, 2026*
+
+> *Every column speaks. Every gauge breathes.*
+> *The longhouse is no longer a monitor — it is a living instrument.*
+
+---
+
+### ⚡ What's New in 5.2.10
+
+This release rounds out the instrument panel with full power telemetry,
+WiFi diagnostics, a built-in source code viewer, and rolling-average
+controls — making RavenMiner HQ the most complete dashboard the forge has
+ever produced.
+
+---
+
+### 📊 New Gauges — Left Column Now Has Five
+
+The left column has grown from two gauges (ASIC + VR temperature) to five:
+
+| Gauge | Colour | Warn | Crit |
+|---|---|---|---|
+| ASIC TEMP | ORANGE | 55°C | 70°C |
+| VR TEMP | CYAN | 50°C | 65°C |
+| VOLTAGE | GREEN | 11.9 V | 11.5 V |
+| CURRENT | ORANGE | 10.0 A | 12.0 A |
+
+Input voltage and draw current are now as visible as temperature.
+All four gauges use the same analogue arc renderer — needle angle,
+colour band, and crit flash all fire the same way regardless of metric.
+
+---
+
+### 🔄 Rolling Averages — CURRENT & CORE VOLTAGE
+
+A new **Avg s** entry in the bottom bar (orange, next to the existing
+Ping avg and Graph entries) controls the rolling average window for
+**CURRENT (A)** and **CORE VOLTAGE (mV)**. Default: `AVGWINDOW` global.
+
+Both values now display the rolling mean over the configured window,
+falling back to the raw reading when history is empty. This smooths
+out noise from short transients without hiding genuine trends.
+
+---
+
+### 📶 WiFi Diagnostics — RSSI & SSID
+
+The right column now shows two new readouts pulled from the NerdQaxe API:
+
+| Field | Colour coding |
+|---|---|
+| WiFi RSSI (dBm) | GREEN `> -60`, ORANGE `-60` to `-75`, RED `< -75` |
+| WiFi SSID | Plain display — confirms which network the miner is on |
+
+Useful for diagnosing marginal WiFi that causes intermittent offline alerts.
+
+---
+
+### 💨 Fan Speed % Display
+
+Fan speed percentage is now shown in the right column and colour-coded:
+- GREEN `< 70 %` — healthy
+- ORANGE `70–90 %` — elevated
+- RED `≥ 90 %` — critical
+
+The `fananimspeed` value (derived from `fanspeed / 0.18`) drives the
+fan indicator animation rate so the visual matches actual RPM feel.
+
+---
+
+### 📜 Source Code Viewer
+
+A new in-app viewer lets you inspect the running `.py` source without
+leaving the forge. Features:
+- Full syntax highlighting: keywords (lavender), strings (green),
+  comments (italic grey), numbers (gold), `def`/`class` (GOLDBRIGHT bold)
+- Horizontal + vertical scroll, read-only, search-ready
+- Line count in the footer (`N lines — read-only`)
+
+---
+
+## [5.2.9] — ᛏ TIWAZ · The Reboot Made Honest
+*April 4, 2026*
+
+> *When the forge goes cold it does not pretend to breathe.*
+
+### 🔁 Reboot Slide-to-Confirm
+
+The reboot control in Settings is now a two-stage slider:
+1. Enable the toggle switch
+2. Slide the bar to 100
+3. Hold for 2 seconds — `HOLD — rebooting...` confirms the timer is armed
+4. Release early at any time to cancel
+
+`rebootholdid` guards against double-fires.
+
+### ⚡ Dashboard Goes Dark Immediately
+
+The moment a reboot is confirmed, `isonline=False` is forced on the
+dashboard (via `stoplivepulse()` + `stopgoldpulse()`) before the HTTP
+POST is even sent. No more green LIVE pulse while the miner is cold.
+
+---
+
+## [5.2.8] — ᛒ BERKANO · The Best-Diff Breathes Blue
+*April 4, 2026*
+
+> *The difficulty counter no longer merely counts.*
+
+### 🔵 Best-Diff Blue Breathe Animation
+
+The Best-Diff value label now slowly breathes in blue — a sine-phase
+pulse driven by `bddiffphase` and fired every 300 ms. When a new
+personal best is registered, a fast **red bounce** fires (`bdredalpha`,
+`bdreddir`, `bdreduntil` epoch control) and then falls back to the
+slow blue breathe.
+
+The label colour changed from GOLD to bright blue `#00aaff` to match.
+
+---
+
+## [5.2.5] — ᚺ HAGALAZ · The Runes Flank the Diff
+*April 3, 2026*
+
+> *Left and right — Fehu and Sowilo — cycling, never in sync.*
+
+### ᚠ Best-Diff Flanking Rune Animation
+
+Two gold rune labels cycle through the full Elder Futhark flanking the
+Best-Diff value. Left starts at FEHU (index 0), right at SOWILO (index 12)
+so they are permanently out of phase. Font: `Segoe UI 40 bold`. The
+fade timers are staggered at 600 ms and 2200 ms after build.
+
+### ⛔ CONNECTION LOST on Startup
+
+`pulsebars()` now shows `CONNECTION LOST` in red immediately on first
+render if the miner is unreachable — even before `hrhistory` has data.
+
+---
+
+## [5.2.2] — ᛃ JERA · The Dead Widget Falls
+*April 3, 2026*
+
+`lblstatus` (the bottom-bar status label) was removed entirely.
+All `tryexcept` guards around `.config()` calls on it have been stripped.
+The forge is quieter for the absence.
+
+---
+
 ## [5.2.1] — ᚱ RAIDHO · Dead Weight Cast Into the Void
 *April 3, 2026*
 
-> *The forge does not carry dead weight.*
-> *What serves no purpose is cast into the void.*
-> *What remains is stronger for the absence.*
-
----
-
 ### 🗑️ Dead Code Purged
 
-`_upd_pool_info()` — a 12-line function that was **never called** anywhere in
-the codebase — has been removed. It carried the wrong API key (`stratum_User`
-instead of `stratumUser`), silently double-wrote `lbl_uptime` and
-`lbl_pool_user` on every poll cycle, and returned nothing of value.
-The World Tree is lighter. The ravens fly faster.
-
----
+`_upd_pool_info()` — a 12-line function that was **never called** —
+removed. It held the wrong API key and would have silently double-written
+two labels had it ever been wired up.
 
 ### 🔇 Debug Prints Removed
 
-| Location | Print statement | Why removed |
+| Location | Print | Risk |
 |---|---|---|
-| Settings watermark draw | `[WM] watermark drawn on canvas successfully` | Fired every time Settings opened — console noise |
-| Settings apply handler | `[APPLY] Sending: {data}` | **Leaked miner IP, pool credentials, voltage settings in plain text** |
-| Settings apply handler | `[APPLY] PATCH {url} -> {status_code}` | Internal HTTP debug — not for production |
+| Settings watermark | `[WM] watermark drawn...` | Console noise |
+| Settings apply | `[APPLY] Sending: {data}` | **Credential leak** |
+| Settings apply | `[APPLY] PATCH {url} -> {code}` | HTTP debug noise |
 
-The credentials leak (`[APPLY] Sending:`) is the most important removal —
-your miner IP and pool settings were printed to the console on every Save.
+The `[APPLY] Sending:` leak was the critical removal — miner IP and pool
+credentials were printed in plain text on every Save.
 
 ---
 
 ## [5.2.0] — ᚨ ANSUZ · The Voice That Needs No Platform
 *April 3, 2026*
 
-> *The war-horn was reborn. Discord was cast into the ash.*
-> *Now a single HTTP whisper reaches any phone in any realm — no account, no platform, no middleman.*
+> *Discord was cast into the ash. ntfy.sh took its throne.*
 
----
+### ⚡ Discord → ntfy.sh
 
-### ⚡ The Big Change — Discord → ntfy.sh
+Discord webhooks replaced with **[ntfy.sh](https://ntfy.sh)** — free,
+open-source, no account required. Setup takes 30 seconds:
 
-Discord has been **fully removed** from RavenMiner HQ.
-
-In its place: **[ntfy.sh](https://ntfy.sh)** — a free, open-source push notification service.
-A single HTTP POST is all it takes. No account required on the public server.
-Self-hosting is a single binary if you want nothing leaving your network.
-
-**Setup takes 30 seconds:**
 1. Install the **ntfy** app on your phone (Android / iOS)
-2. Open Settings in RavenMiner HQ
-3. Paste your topic URL: `https://ntfy.sh/your-secret-topic-name`
+2. Open Settings → **NTFY.SH ALERTS**
+3. Paste your topic URL: `https://ntfy.sh/your-secret-topic`
 4. Hit **▶  TEST NOTIFY  (ntfy.sh)**
-5. Your phone buzzes. The war-horn is armed.
-
-> *Make your topic name long and random — it is your password on the public server.*
-
----
+5. Done.
 
 ### 🐦‍⬛ Raven Position Fix
 
-Huginn and Muninn no longer clip the top bar. Both ravens lowered 24 px —
-normal frame and flash animation kept in sync.
+Huginn and Muninn lowered 24 px — they no longer clip the top bar.
 
----
+### 🐛 Bugs Slain (5 total)
 
-### 🐛 Bugs Slain
-
-| Bug | Description | Fix |
-|---|---|---|
-| `lbl_refresh_stat` spam | Attribute accessed before widget created — every poll tick logged an error | `getattr` guard applied |
-| `color=` kwarg on ntfy calls | Stale Discord kwarg survived migration in milestone and test calls | Removed; replaced with `priority`/`tags` |
-| `IndentationError` line 2159 | Patch collision duplicated `if _wh_ms:` guard, dropped closing `)` | Block rebuilt cleanly |
-| Latin-1 header encoding | Emoji in `Title` header caused `UnicodeEncodeError` | Non-ASCII stripped from header; emoji carried by `Tags` field |
-
----
-
-## [3.9.9] — ᛟ OTHALA · The Ancestral Hall Fortified
-
-Two gifts nailed to the World Tree: alert on new best difficulty ≥ 50M,
-and a rolling TCP ping with colour-coded tide.
-A thread-death race condition hunted down and fed to the wolves.
-
----
-
-## [3.9.8] — ᛒ BERKANO · The Branch Reaches Further
-
-The miner's true name — `stratumUser` — burns gold on the ping row.
-The firmware label was anchored south, where it belongs.
-
----
-
-## [3.9.7] — ᚺ HAGALAZ · Hail Fell, Was Endured
-
-The tray speaks: `⚡ NEW DIFFICULTY` when `bestSessionDiff` climbs past 50M.
-The ping thread-exit ghost was exorcised.
-
----
-
-## [3.9.6] — ᛃ JERA · The Harvest Corrected
-
-`applyhrrefresh()` read the wrong rune. The graph floor was raised to `0.10 s`.
-
----
-
-## [3.9.5] — ᛜ INGWAZ · The Seed of Stability
-
-The cyan ping eye opened — TCP-born, non-blocking, daemon-threaded.
-Alert fields no longer crack on empty input. IP fallback rune carved.
-
----
-
-## [3.9.4] — ᛟ OTHALA · The Foundation Stone
-
-*In the beginning there was nothing. Then Alan carved the first rune.*
-
-| Pillar | Purpose |
+| Bug | Fix |
 |---|---|
-| Three-column layout | Temperatures · Hashrate · Power |
-| Vegvisir watermark | The wayfinding sigil, always present |
-| Huginn & Muninn | Thought and memory, watching always |
-| System tray daemon | The unseen watcher |
-| Alert system | The war-horn to any realm |
-| BTC price (CoinGecko) | The gold-weight, refreshed in silence |
-| Rejection % display | Shame, colour-coded green to red |
-| Alert config cache | The scroll read once, held in memory |
+| `lbl_refresh_stat` AttributeError spam | `getattr` guard |
+| Stale `color=` kwarg on milestone call | Removed |
+| Stale `color=` kwarg on test button | Removed |
+| `IndentationError` in milestone block | Block rebuilt |
+| Latin-1 emoji header encoding | Non-ASCII stripped from Title |
+
+---
+
+## [3.9.4] — [3.9.9] — Foundation through Fortification
+
+| Version | Name | Key Change |
+|---|---|---|
+| 3.9.9 | OTHALA | Rolling TCP ping · difficulty ≥ 50M alert |
+| 3.9.8 | BERKANO | Pool user display · firmware label fix |
+| 3.9.7 | HAGALAZ | Tray difficulty popup · thread exit fix |
+| 3.9.6 | JERA | HR refresh var bug fix |
+| 3.9.5 | INGWAZ | Ping display · stability · IP fallback |
+| 3.9.4 | OTHALA | **Foundation** — first rune carved |
 
 ---
 

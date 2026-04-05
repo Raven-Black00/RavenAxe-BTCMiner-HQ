@@ -34,7 +34,7 @@ sudo dnf install python3-tkinter
 Launch the longhouse from the project root:
 
 ```bash
-python Ravenminer_HQ_5.2.1.py
+python Ravenminer_HQ_5_2_10.py
 ```
 
 On first invocation, a settings scroll will appear.
@@ -57,6 +57,20 @@ The following runes must be carved:
 
 Settings are cached in memory and written to `ravenminer_alerts.json` on save.
 **Do not edit JSON files by hand** unless you speak the machine tongue.
+
+---
+
+## 🔁 Reboot — The Slide-to-Confirm Guard
+
+The reboot control in Settings requires three deliberate steps to fire:
+
+1. **Enable the toggle switch** — the label turns RED reading `ON`
+2. **Slide the bar to 100** — the label reads `## %` as you drag
+3. **Hold at 100 for 2 seconds** — the label reads `HOLD — rebooting...`
+
+Releasing the slider before the 2-second hold expires cancels the reboot.
+The moment a reboot is confirmed, the dashboard immediately shows
+`CONNECTION LOST` — the forge does not pretend the miner is still breathing.
 
 ---
 
@@ -93,6 +107,52 @@ notification service. No account required. One HTTP POST, any phone on Earth.
 
 ---
 
+## 📊 The Five Gauges — Left Column
+
+The left column now displays five analogue arc gauges:
+
+| Gauge | Colour | Warn | Crit |
+|---|---|---|---|
+| ASIC TEMP | ORANGE | 55°C | 70°C |
+| VR TEMP | CYAN | 50°C | 65°C |
+| VOLTAGE | GREEN | 11.9 V | 11.5 V (lo: 10.0, hi: 13.5) |
+| CURRENT | ORANGE | 10.0 A | 12.0 A (lo: 0.0, hi: 15.0) |
+
+Each gauge needle turns RED when the critical threshold is crossed.
+
+---
+
+## 🔄 Rolling Averages — The Avg Window
+
+The bottom bar has four configurable entries (right to left):
+
+| Entry | Colour | Controls |
+|---|---|---|
+| `Refresh s` | CYAN | Main API poll interval (floor 0.10 s) |
+| `Graph s` | GOLD | Hashrate bar graph redraw rate (floor 0.10 s) |
+| `Ping avg s` | TEAL | Ping rolling average window |
+| `Avg s` | ORANGE | CURRENT (A) + CORE VOLTAGE (mV) rolling average window |
+
+Type a new value and press `Return` or click away. Floors and ceilings
+are enforced — the field resets if you enter an illegal value.
+
+---
+
+## 📶 WiFi Signal — Reading the Ether
+
+The right column shows the miner's WiFi RSSI and SSID live:
+
+| Colour | Threshold | Omen |
+|---|---|---|
+| 🟢 GREEN | > -60 dBm | Strong — the ether is clear |
+| 🟠 ORANGE | -60 to -75 dBm | Marginal — watch for drop-outs |
+| 🔴 RED | < -75 dBm | Weak — the signal frays |
+
+If RSSI shows `---`, your NerdQaxe firmware does not expose `wifiRSSI`.
+Update firmware or treat as informational.
+
+---
+
 ## 🌊 Ping Colours — Reading the Tide
 
 The rolling ping display speaks in colour:
@@ -105,6 +165,19 @@ The rolling ping display speaks in colour:
 
 Ping is TCP-born, non-blocking, daemon-threaded.
 `pinginflight` stands guard — threads do not pile like corpses.
+
+---
+
+## 🔵 Best-Diff Pulse — The Breathing Counter
+
+The Best-Diff value breathes in **blue** (`#00aaff`) when no new record
+is being set — a slow sine-phase animation driven by `bddiffpulse()`.
+
+When a **new personal best** is registered:
+- A fast **red bounce** fires for a short window
+- The bounce expires (`bdreduntil` epoch) and the label returns to blue breathe
+- Two gold **flanking runes** cycle through the Elder Futhark, left and right,
+  never in sync
 
 ---
 
@@ -121,31 +194,54 @@ Right-click the tray icon to:
 
 ---
 
+## 📜 Source Code Viewer
+
+The in-app source viewer opens the running `.py` file in a syntax-highlighted
+scrollable window. Features:
+
+- **Keywords** — lavender `#cc99ff`
+- **Strings** — green `#a8ff78`
+- **Comments** — italic grey `#555577`
+- **Numbers** — gold `#ffcc44`
+- **`def` / `class`** — GOLDBRIGHT bold
+
+The viewer is read-only. Horizontal and vertical scrollbars included.
+Line count shown in the footer.
+
+---
+
 ## ᛜ Troubleshooting — When Hail Falls
 
 **ntfy test alert sent but phone does not buzz**
 → Confirm the ntfy app is installed and subscribed to your exact topic name.
   The topic name is case-sensitive. Check for trailing spaces in the URL field.
 
+**Voltage / Current gauges show 0 or ---**
+→ Your NerdQaxe firmware may not expose `coreVoltageActual` / `currentA`.
+  Update to the latest NerdQaxe++ firmware.
+
+**WiFi RSSI shows --- dBm**
+→ Firmware does not expose `wifiRSSI`. Ignore or update firmware.
+
+**Reboot slider won't fire**
+→ You must (1) enable the toggle, (2) slide to 100, AND (3) hold for 2 seconds.
+  Releasing early cancels. This is intentional.
+
+**Dashboard still shows LIVE after reboot command**
+→ Fixed in v5.2.9. Update to current version if still occurring.
+
 **ntfy alert error: codec can't encode character**
-→ Fixed in v5.2.1. Emoji are now carried by the `Tags` field, not the header.
-  Update to v5.2.1 if you see this error.
+→ Fixed in v5.2.0. Emoji are now carried by the `Tags` field, not the header.
 
-**The widget shows stale ping values**
-→ Fixed in v3.9.7+. Ensure you are running the latest version.
-
-**Settings panel crashes on empty alert fields**
-→ Fixed in v3.9.5+. `float(raw) or 0` guards the ValueError wolf.
+**`[RavenMiner] ignored error: lbl_refresh_stat` spam in console**
+→ Fixed in v5.2.1. Update to current version.
 
 **The miner IP is not found after settings change**
 → The IP fallback rune `self.cfg.get("minerip", MINERIP)` holds the last known
   address. Save settings again to re-anchor.
 
 **Hashrate graph refresh is too fast / erratic**
-→ The floor is `0.10` seconds (v3.9.6+). Do not set below this.
-
-**`[RavenMiner] ignored error: lbl_refresh_stat` spam in console**
-→ Fixed in v5.2.1. The widget guard was missing. Update to v5.2.1.
+→ The floor is `0.10` seconds. Do not set below this.
 
 ---
 
@@ -155,7 +251,7 @@ To forge a standalone executable for those who do not speak Python:
 
 ```bash
 pip install pyinstaller
-pyinstaller --onefile --windowed --icon=assets/huginn.ico Ravenminer_HQ_5.2.1.py
+pyinstaller --onefile --windowed --icon=assets/huginn.ico Ravenminer_HQ_5_2_10.py
 ```
 
 The compiled relic will appear in `dist/`.
@@ -166,8 +262,8 @@ Carry it to any Windows machine without Python installed.
 ## ᚷ File Structure — The Bones of the Longhouse
 
 ```
-ravenminer_hq/
-├── Ravenminer_HQ_5.2.1.py   ← The forge itself
+RavenAxe-BTCMiner-HQ/
+├── Ravenminer_HQ_5_2_10.py  ← The forge itself
 ├── ravenminer_config.json    ← The sacred scroll (auto-generated)
 ├── ravenminer_alerts.json    ← Alert thresholds & ntfy topic (auto-generated)
 ├── requirements.txt          ← The dependencies of Yggdrasil
