@@ -103,6 +103,48 @@ _APP_VER = "5.5.1"
 
 ---
 
+## PATCH 6 — FREQ. OC Gauge Range 0 → 900 MHz
+
+**Location:** `_draw_gauge()` calls for `freq_gauge_canvas`
+
+```python
+# Before
+self._draw_gauge(self.freq_gauge_canvas, 0, GREEN, lo=400, hi=1000, freq_mode=True)
+self._draw_gauge(self.freq_gauge_canvas, _freq_val, GREEN, lo=400, hi=1000, freq_mode=True)
+
+# After
+self._draw_gauge(self.freq_gauge_canvas, 0, GREEN, lo=0, hi=900, freq_mode=True)
+self._draw_gauge(self.freq_gauge_canvas, _freq_val, GREEN, lo=0, hi=900, freq_mode=True)
+```
+
+**Colour bands updated:**
+
+| Zone | Before | After |
+|------|--------|-------|
+| 🟢 Green | 0 – 750 MHz | 0 – 700 MHz |
+| 🟠 Orange | 750 – 800 MHz | 700 – 850 MHz |
+| 🔴 Red | 800+ MHz | 850 – 900 MHz |
+
+All colour thresholds updated in: arc bands, tick label colours, centre readout, `freqocpulse`, live `foccol`.
+
+---
+
+## PATCH 7 — Email Address Update
+
+**Location:** `lbl_email` widget text + `<Button-1>` mailto binding
+
+```python
+# Before
+self.lbl_email = tk.Label(_inner, text="sonofodin@outlook.com", ...)
+self.lbl_email.bind("<Button-1>", lambda e: _wb.open_new_tab("mailto:sonofodin@outlook.com"))
+
+# After
+self.lbl_email = tk.Label(_inner, text="sonofgrimnir@outlook.com", ...)
+self.lbl_email.bind("<Button-1>", lambda e: _wb.open_new_tab("mailto:sonofgrimnir@outlook.com"))
+```
+
+---
+
 ## Summary
 
 | # | Location | Effect |
@@ -112,6 +154,8 @@ _APP_VER = "5.5.1"
 | 3 | `_APP_VER` | Version `5.4.9` → `5.5.1` |
 | 4 | `__main__` | Horn fires on startup |
 | 5 | Block detection | Horn fires on every new block found |
+| 6 | `_draw_gauge` freq calls | Freq gauge range `400–1000` → `0–900 MHz` |
+| 7 | `lbl_email` + mailto binding | Email updated to `sonofgrimnir@outlook.com` |
 
 All patches verified — Python syntax clean
 
