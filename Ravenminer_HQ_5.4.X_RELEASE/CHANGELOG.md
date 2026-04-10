@@ -8,6 +8,54 @@
 
 ---
 
+## [5.4.9] — ᛈ PERTHO · The Pulse Made Visible
+*April 10, 2026*
+
+> *The ping no longer merely counts.*
+> *It breathes. It spikes. It traces the heartbeat of the network.*
+
+### ✦ Added
+
+- **ᛈ PERTHO — ECG Heart-Rate Ping Graph**
+  A `tk.Canvas` ECG-style waveform graph now lives below the ping value.
+  The graph pulls directly from the rolling ping history buffer — every
+  sample that feeds the rolling average also feeds the waveform. No fake
+  animation data; it is the real pulse of your miner's network.
+
+- **ᚺ HAGALAZ — Three-Pass Glow Rendering (PIL Path)**
+  When Pillow is available, the ping graph uses the same supersampled
+  rendering pipeline as the hashrate history graph:
+  - 2× LANCZOS supersampled canvas — crisp, anti-aliased at any DPI
+  - **Haze pass**: 14 px wide, 52% brightness — outer diffuse glow
+  - **Bloom pass**: 6 px wide, 88% brightness — tight bloom ring
+  - **Core pass**: 2 px wide, 100% brightness — razor sharp line
+  - Data-point dots every 3rd sample — coloured ring + white centre fill
+  - `_ping_line_photo` GC guard prevents premature garbage collection
+
+- **ᚠ FEHU — Tkinter Fallback Renderer**
+  When Pillow is absent, a three-pass plain tkinter renderer activates:
+  7 px / 3 px / 1 px width passes with matching brightness ratios.
+  Oval data dots with white centres — consistent look, no PIL required.
+
+- **ᛚ LAGUZ — Latency Colour Bands**
+  The graph and fill area colour-code automatically by current ping latency:
+
+  | Band | Threshold | Line colour | Fill colour |
+  |---|---|---|---|
+  | Swift | < 50 ms | `#00ffcc` cyan | `#003322` |
+  | Marginal | < 120 ms | `#ffaa00` orange | `#2a1400` |
+  | Critical | ≥ 120 ms | `#ff3344` red | `#2a0008` |
+
+### ✦ Changed
+
+- **ᚾ NAUTHIZ — Ping Label — "ms" Suffix Removed**
+  The ping value label now displays the numeric value only (e.g. `42`)
+  instead of `42 ms`. The ECG graph serves as the unit indicator.
+  Both the initialisation string (`'---'`) and the live update path
+  (`f'{avg_ms}'`) have been updated.
+
+---
+
 ## [5.4.0] — ᚢ URUZ · The Forge Reborn
 *April 9, 2026*
 
@@ -147,260 +195,90 @@
   After a reboot command is issued from Settings, `stoplivepulse()` and
   `stopgoldpulse()` are now called immediately on the dashboard object, forcing
   `isonline=False` and resetting `offlinecount=0` before the miner goes dark.
-  Previously the dashboard pulsed LIVE green for up to one full poll interval
-  after the reboot was triggered.
 
 - **ᛊ SOWILO — Reboot Slide-to-Confirm + 2s Hold Guard**
   The reboot button in Settings is now a two-stage slider. The user must:
   (1) enable the toggle switch, (2) slide the bar to 100, (3) hold for 2 seconds.
-  Releasing early cancels the hold timer. `rebootholdid` guards against
-  accidental double-fires. Label states: `OFF` → `HOLD — rebooting...`.
+  `rebootholdid` guards against accidental double-fires.
 
 ---
 
 ## [5.2.8] — ᛒ BERKANO · The Best-Diff Breathes Blue
 *April 4, 2026*
 
-> *The difficulty counter no longer merely counts.*
-> *It breathes. It warns. It pulses with the tide.*
-
 ### ✦ Added
 
 - **ᛁ ISA — Best-Diff Slow Blue Breathe**
-  `bddiffphase` (sine phase, `float`) drives a slow breathing animation on the
-  Best-Diff label. `bddiffpulse()` fires every 300 ms via `root.after`.
-  Colour cycles gently through a blue sine wave — calm when low, brightening
-  as the number climbs.
-
 - **ᚱ RAIDHO — Best-Diff Red Bounce Alert**
-  `bdredalpha` and `bdreddir` drive a fast red bounce when the Best-Diff label
-  enters an alert state. `bdreduntil` (epoch float) controls duration.
-  The label snaps back to blue breathe when the alert window expires.
-
 - **ᚾ NAUTHIZ — Best-Diff String Tracking**
-  `lastbdtext` (`str`) tracks the last rendered Best-Diff string. Prevents
-  unnecessary canvas redraws when the value has not changed between ticks.
 
 ### ✦ Changed
 
-- **ᛟ OTHALA — Best-Diff Label Colour**
-  Best-Diff value label is now bright blue `#00aaff` (was GOLD `#c9a84c`).
-  The new colour distinguishes it from share counts and pairs with the blue
-  breathe pulse animation.
+- **ᛟ OTHALA — Best-Diff Label Colour → `#00aaff`**
 
 ---
 
 ## [5.2.5] — ᚺ HAGALAZ · The Runes Flank the Diff
 *April 3, 2026*
 
-> *Hail fell on the diff counter and the runes rose to guard it.*
-> *Left and right — Fehu and Sowilo — cycling, never in sync.*
-
 ### ✦ Added
 
-- **ᛖ EHWAZ — Best-Diff Flanking Rune Animation**
-  Two cycling rune labels (`lblbestdiffrunel`, `lblbestdiffruner`) flank the
-  Best-Diff value. Left starts at FEHU (index 0), right starts at SOWILO
-  (index 12) so they are never in sync. Both cycle through the full Elder
-  Futhark independently. Font: `Segoe UI, 40, bold`, colour: GOLDBRIGHT.
-
+- **ᛖ EHWAZ — Best-Diff Flanking Rune Animation** (FEHU left, SOWILO right)
 - **ᚲ KENAZ — CONNECTION LOST Fires on Startup**
-  `pulsebars()` now checks `isonline` before rendering the bar graph,
-  regardless of whether `hrhistory` is populated. On startup with no miner
-  reachable, `CONNECTION LOST` in red appears immediately at first render
-  (200 ms after launch) rather than waiting for history to accumulate.
-
-### ✦ Fixed
-
-- **BUG-05 — Left and Right Best-Diff Rune Index Stagger**
-  `bdrunelidx` and `bdruneridx` initialised at 0 and 12 respectively.
-  `bdrunefadeout_l` and `bdrunefadeout_r` scheduled at 600 ms and 2200 ms
-  after build to stagger the first fade pair, preventing lockstep animation.
 
 ---
 
 ## [5.2.2] — ᛃ JERA · The Dead Widget Falls
 *April 3, 2026*
 
-> *A label that was never seen should never have been bound.*
-> *The status bar is gone. The forge is quieter for it.*
-
 ### ✦ Removed
 
 - **ᛊ SOWILO — `lblstatus` Widget Removed**
-  The bottom-bar status label (`lblstatus`) was removed entirely. All
-  `tryexcept` guards wrapping `self.lblstatus.config(...)` calls have been
-  stripped. References replaced by the `pulsebars()` / `livetick()` visual
-  feedback system already in place.
 
 ---
 
 ## [5.2.1] — ᚱ RAIDHO · Dead Weight Cast Into the Void
 *April 3, 2026*
 
-> *What was never called should never have remained.*
-> *The codeforge is lean. The ravens fly true.*
+### ✦ Removed / Fixed
 
-### ✦ Removed
-
-- **ᚱ RAIDHO — Dead Function `_upd_pool_info()` Purged**
-  This 12-line method was defined but never called anywhere in the codebase.
-  It also held the wrong API key (`stratum_User` vs `stratumUser`), causing a
-  phantom double-write to `lbl_uptime` and `lbl_pool_user` on every poll cycle
-  had it ever been wired up. 15 lines of dead runes returned to the void.
-
-### ✦ Fixed
-
-- **BUG-B — `[WM]` Debug Print Removed**
-  `print("[WM] watermark drawn on canvas successfully")` fired every time the
-  Settings panel opened. Console noise eliminated.
-
-- **BUG-C — Credentials Leak Sealed**
-  `print("[APPLY] Sending:", data)` was printing miner IP, pool credentials,
-  voltage and frequency settings in plain text on every settings save. Removed.
-
-- **BUG-D — HTTP Debug Print Removed**
-  `print(f"[APPLY] PATCH {url} -> {resp.status_code}")` removed.
-  Internal HTTP calls are not production console output.
+- Dead function `_upd_pool_info()` purged
+- `[WM]` debug print removed
+- Credentials leak `[APPLY] Sending: {data}` sealed
+- HTTP debug print removed
 
 ---
 
 ## [5.2.0] — ᚨ ANSUZ · The Voice That Needs No Platform
 *April 3, 2026*
 
-> *The war-horn was reborn. It no longer needs Discord to scream.*
-> *A single HTTP whisper reaches any phone in any realm.*
-
 ### ✦ Added
 
-- **ᚨ ANSUZ — ntfy.sh Push Notification System**
-  Discord webhooks fully replaced with `ntfy.sh`. No account required on the
-  public server. Single HTTP POST to `https://ntfy.sh/your-secret-topic`
-  delivers native push alerts to iOS and Android. Self-hosting supported.
-
+- **ᚨ ANSUZ — ntfy.sh Push Notification System** (Discord webhooks replaced)
 - **ᛜ INGWAZ — Per-Alert Priority & Emoji Tags**
-
-  | Alert | Priority | Tags |
-  |---|---|---|
-  | 🔥 MINER OVERHEAT | `high` | `fire,rotating_light` |
-  | 🟠 VR OVERHEAT | `high` | `fire,orange_circle` |
-  | ⚠️ MINER OFFLINE | `high` | `warning,red_circle` |
-  | ⛏️ BLOCK FOUND | `high` | `trophy,tada` |
-  | ❌ REJECTED SPIKE | `default` | `x,warning` |
-  | 📉 LOW HASHRATE | `default` | `chart_with_downwards_trend` |
-  | 🏆 NEW MILESTONE | `default` | `trophy,sparkles` |
-  | ✅ TEST ALERT | `default` | `white_check_mark` |
-
 - **ᛏ TIWAZ — TEST NOTIFY Button in Settings**
-  Settings panel now shows **▶  TEST NOTIFY  (ntfy.sh)**.
-
-### ✦ Changed
-
-- **ᚱ RAIDHO — Config Key Renamed**
-  `discord_webhook` → `ntfy_topic` in `ravenminer_alerts.json`.
-
-- **ᛒ BERKANO — Settings Section Relabelled**
-  "DISCORD ALERTS" → "NTFY.SH ALERTS".
-
-- **ᛟ OTHALA — Raven Pair Repositioned**
-  Both ravens lowered 24 px — no longer clipping the top bar.
-
-### ✦ Fixed
-
-- **BUG-FIX — `send_ntfy_alert()` Latin-1 Header Encoding**
-  Emoji in `Title` header caused `UnicodeEncodeError`. Non-ASCII stripped from
-  Title only; emoji preserved via `Tags` field.
-
-- **BUG-FIX — Stale `color=` kwargs on ntfy calls** (milestone + test button)
-- **BUG-FIX — `IndentationError` in Milestone Block** (`py_compile` clean)
-- **BUG-FIX — `lbl_refresh_stat` AttributeError Spam** (`getattr` guard applied)
 
 ---
 
 ## [4.0.0] — ᛞ DAGAZ · Dawn of the New Forge
 
-> *The sun rose over Yggdrasil. The old serpent shed its skin.*
-
-### ✦ Added
-
-- **ᛗ MANNAZ — Clickable Email in Header** (`sonofodin@outlook.com`, `cursor="hand2"`)
-- **ᛜ INGWAZ — Difficulty Milestone Alerts** (every 50M crossed, fires once)
-- **ᛞ DAGAZ — Session Milestone Reset** (resets when `bestDiff < lastBestDiff × 0.5`)
-
-### ✦ Changed
-
-- **ᚱ RAIDHO — `webbrowser` Import Moved Earlier** (hoisted to top of `build()`)
-
-### ✦ Fixed
-
-- **ᚲ KENAZ — Version Label GitHub Link Preserved**
+- Clickable email header, difficulty milestone alerts, session milestone reset
 
 ---
 
-## [3.9.9] — ᛟ OTHALA · The Ancestral Hall Fortified
+## [3.9.4]–[3.9.9] — Foundation through Fortification
 
-### ✦ Added
-- **ᚾ NAUTHIZ — Alert on New Best Difficulty ≥ 50M**
-- **ᛏ TIWAZ — TCP-Connect Ping with Adjustable Rolling Average**
-
-### ✦ Fixed
-- **ᛊ SOWILO — Thread-Safe Ping Capture Before Exit**
-
----
-
-## [3.9.8] — ᛒ BERKANO · The Branch Reaches Further
-
-### ✦ Added
-- **ᚷ GEBO — Pool User Display on Ping Row**
-
-### ✦ Fixed
-- **ᚹ WUNJO — Firmware Label Placement Stabilised**
+| Version | Rune | Key Change |
+|---|---|---|
+| 3.9.9 | ᛟ OTHALA | Rolling TCP ping · difficulty ≥ 50M alert |
+| 3.9.8 | ᛒ BERKANO | Pool user display · firmware label fix |
+| 3.9.7 | ᚺ HAGALAZ | Tray difficulty popup · thread exit fix |
+| 3.9.6 | ᛃ JERA | HR refresh var bug fix |
+| 3.9.5 | ᛜ INGWAZ | Ping display · stability · IP fallback |
+| 3.9.4 | ᛟ OTHALA | **Foundation** — first rune carved |
 
 ---
 
-## [3.9.7] — ᚺ HAGALAZ · Hail Fell, Was Endured
-
-### ✦ Added
-- **ᛁ ISA — NEW DIFFICULTY Tray Popup**
-
-### ✦ Fixed
-- **ᚠ FEHU — Thread Exit Value Capture**
-
----
-
-## [3.9.6] — ᛃ JERA · The Harvest Corrected
-
-### ✦ Fixed
-- **BUG1 FIX — HR Refresh Var Wrong Reference**
-
----
-
-## [3.9.5] — ᛜ INGWAZ · The Seed of Stability
-
-### ✦ Added
-- **ᚾ NAUTHIZ — Network Ping Display**
-- **ᚨ ANSUZ — Non-Blocking Ping Thread**
-
-### ✦ Fixed
-- **BUG3 FIX — Non-Numeric Alert Field Guard**
-- **FIX5 — Live Settings IP Fallback**
-
----
-
-## [3.9.4] — ᛟ OTHALA · The Foundation Stone
-
-> *The longhouse was raised from raw timber and rune-carved beams.*
-
-### ✦ Added
-- **ᚠ FEHU — Initial Release**
-  Core architecture: three-column layout, animated hashrate bar graph,
-  Vegvisir watermark, Huginn & Muninn raven pair, system tray daemon,
-  alert system, BTC price, rejection % display, cached alert config.
-
----
-
-ᚠᛖᚺᚢ ᛏᛁᚹᚨᛉ ᛟᛞᛁᚾᚾ
-May your difficulty be low and your uptime eternal.
-The ravens watch. The Allfather approves.
-R A V E N M I N E R H Q — ᚲᚺᚨᚾᚷᛖᛚᛟᚷ
-ᚠ ᚢ ᚨ ᚱ ᚲ ᚷ ᚹ — ᛏ ᛒ ᛗ — ᛜ ᛞ ᛟ
+<p align="center">
+  <em>ᚠᚢᚦᚨᚱᚲ — May your hashes flow true and your blocks be found</em>
+</p>

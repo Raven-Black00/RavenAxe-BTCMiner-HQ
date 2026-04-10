@@ -19,17 +19,17 @@ It watches your miner, whispers when hashrate falls, screams to your phone
 when blocks are found, and stands as a silent sentinel in your system tray —
 like a raven perched on the World Tree.
 
-**Current version: 5.4.0**
+**Current version: 5.4.9**
 
 ---
 
 ## ᚢᚱᚢᛉ — Requirements
 
 | Rune | Dependency | Purpose |
-|------|-----------|---------| 
+|------|-----------|---------|
 | ᚠ FEHU | Python 3.10+ | The serpent of Midgard |
 | ᚨ ANSUZ | `requests` | Speaks to the pool API and ntfy.sh |
-| ᚲ KENAZ | `Pillow` | Shapes the tray icon |
+| ᚲ KENAZ | `Pillow` | Supersampled graph rendering + tray icon |
 | ᚷ GEBO | `pystray` | Binds the tray spirit |
 | ᛏ TIWAZ | PyInstaller | Forges the .exe |
 
@@ -54,7 +54,7 @@ pip install -r requirements.txt
 **Run from source:**
 
 ```bash
-python Ravenminer_HQ_5_4_0.py
+python Ravenminer_HQ_5_4_9.py
 ```
 
 ---
@@ -63,8 +63,10 @@ python Ravenminer_HQ_5_4_0.py
 
 ```bash
 pip install pyinstaller
-pyinstaller --onefile --windowed --icon=assets/huginn.ico Ravenminer_HQ_5_4_0.py
+pyinstaller --onefile --windowed --icon=assets/huginn.ico Ravenminer_HQ_5_4_9.py
 ```
+
+Or use **RavenForge** — the animated GUI build assistant included in this repo.
 
 The finished `.exe` lands in `dist\`.
 
@@ -75,7 +77,7 @@ The finished `.exe` lands in `dist\`.
 On first run, two rune-scrolls are conjured automatically beside the `.exe`:
 
 | File | Purpose |
-|------|---------| 
+|------|---------|
 | `ravenminer_config.json` | Miner IP, pool, refresh interval |
 | `ravenminer_alerts.json` | Thresholds, ntfy topic URL |
 
@@ -92,6 +94,7 @@ no restart required.
 - ᛜ **System tray daemon** — lives in the tray, out of your way
 - ᛞ **Colour-coded status** — GREEN / GOLD / RED / ORANGE at a glance
 - ᚱ **TCP ping with rolling average** — live latency to your miner
+- 💓 **ECG heart-rate ping graph** — three-pass glow waveform, colour-coded by latency band
 - ᛟ **BTC price live** — CoinGecko feed, refreshed every 60 seconds
 - ᚲ **Rejection % tracking** — share rejection colour-coded by severity
 - 🐦‍⬛ **Huginn & Muninn** — animated raven pair, always watching
@@ -103,18 +106,13 @@ no restart required.
 - 🔵 **Best-Diff blue breathe** — animated pulse + red bounce on new personal best
 - ᚠ **Flanking rune animation** — Elder Futhark cycles flank the Best-Diff counter
 - 📜 **Source code viewer** — syntax-highlighted in-app reader
+- ⚒ **RavenForge UI** — Viking font, animated Vegvisir compass, rune particles, pulsing gold title
 
 ---
 
-- ⚒ **RavenForge UI overhaul** — Viking font, animated Vegvisir compass, rune particles, pulsing gold title
-- 🔤 **Viking Regular title font** — auto-registered from `.ttf` at startup, graceful fallback chain
-- 🎞 **Animated GlowLine borders** — sweeping gold/purple gradient lines in the title bar
-- 🖼 **Icon chooser with live preview** — 64×64 PIL canvas preview, animated rune placeholder
-- 🐛 **Frozen .exe re-launch loop fixed** — `PYTHON_EXE` resolver prevents subprocess self-launch
-
 ## ⚡ ntfy.sh Push Notifications
 
-RavenMiner HQ v5.4.0 uses **ntfy.sh** for push alerts.
+RavenMiner HQ uses **ntfy.sh** for push alerts — free, open-source, no account required.
 
 **30-second setup:**
 1. Install the ntfy app on your phone
@@ -130,15 +128,18 @@ and nothing leaves your network.
 ## ᚹᚢᚾᛃᛟ — Colour Palette
 
 | Name | Hex | Rune Role |
-|------|-----|-----------| 
+|------|-----|-----------|
 | GOLD BRIGHT | `#f0c040` | Headers, primary text |
 | GOLD | `#c9a84c` | Labels, prompts |
 | PURPLE GLOW | `#9d5fff` | Section banners |
-| CYAN | `#00e5ff` | In-progress / ping / VR gauge |
+| CYAN | `#00e5ff` | In-progress / ping low / VR gauge |
+| CYAN PING | `#00ffcc` | Ping ECG graph — swift latency |
 | GREEN | `#00ff88` | Success / good values / voltage gauge |
 | BLUE | `#00aaff` | Best-Diff counter |
 | RED | `#ff3030` | Failure / critical |
 | ORANGE | `#ff7700` | Warning / elevated / current gauge |
+| ORANGE PING | `#ffaa00` | Ping ECG graph — marginal latency |
+| RED PING | `#ff3344` | Ping ECG graph — critical latency |
 
 ---
 
@@ -163,19 +164,26 @@ and nothing leaves your network.
 > Confirm `coreVoltageActual` and `currentA` are present in your miner's
 > `/api/system/info` response. Only NerdQaxe++ firmware exposes these fields.
 
+**Ping graph is flat / not rendering**
+> Install Pillow: `pip install Pillow`. The graph also works without Pillow
+> via the tkinter fallback renderer — check that ping history is accumulating
+> (requires at least 2 successful TCP pings after launch).
+
 ---
 
 ## ᛒᛖᚱᚲᚨᚾᛟ — Project Structure
 
 ```
 RavenAxe-BTCMiner-HQ/
-├── Ravenminer_HQ_5_4_0.py   ← The great serpent
+├── Ravenminer_HQ_5_4_9.py   ← The great serpent
+├── ravenforge_v2.py           ← The forge assistant
 ├── requirements.txt           ← The rune-dependency scroll
 ├── ravenminer_config.json     ← Auto-conjured on first run
 ├── ravenminer_alerts.json     ← Auto-conjured on first run
 ├── CHANGELOG.md               ← Every wound healed in the codeforge
 ├── Release-Notes.md           ← This release's chronicle
 ├── instructions.md            ← The Keeper's Codex
+├── RavenForge_Instructions.md ← RavenForge usage guide
 └── dist/                      ← The forged .exe lands here
 ```
 
@@ -203,7 +211,8 @@ Use it, fork it, forge it anew. Give credit where the mead flows.
 
 | Version | Rune | Notes |
 |---------|------|-------|
-| 5.4.0  | ᚢ URUZ   | RavenForge UI overhaul · Viking font · Vegvisir compass · frozen-exe fix |
+| 5.4.9 | ᛈ PERTHO | ECG ping graph · three-pass glow · data dots · latency colour bands |
+| 5.4.0 | ᚢ URUZ | RavenForge UI overhaul · Viking font · Vegvisir compass · frozen-exe fix |
 | 5.2.10 | ᛟ OTHALA | Voltage + current gauges · WiFi · fan % · source viewer · avg window |
 | 5.2.9 | ᛏ TIWAZ | Reboot slide-to-confirm · instant isonline=False |
 | 5.2.8 | ᛒ BERKANO | Best-Diff blue breathe · red bounce · #00aaff label |
@@ -213,10 +222,6 @@ Use it, fork it, forge it anew. Give credit where the mead flows.
 | 5.2.0 | ᚨ ANSUZ | ntfy.sh replaces Discord · raven fix · 5 bugs slain |
 | 4.0.0 | ᛞ DAGAZ | Milestone alerts · clickable email header |
 | 3.9.9 | ᛟ OTHALA | Rolling ping · thread-safety hardening |
-| 3.9.8 | ᛒ BERKANO | Pool user display |
-| 3.9.7 | ᚺ HAGALAZ | Tray difficulty popup |
-| 3.9.6 | ᛃ JERA | HR refresh bug fix |
-| 3.9.5 | ᛜ INGWAZ | Ping display · stability |
 | 3.9.4 | ᛟ OTHALA | Foundation |
 
 ---
@@ -226,8 +231,8 @@ Use it, fork it, forge it anew. Give credit where the mead flows.
 - **ODIN** — for the wisdom of two watchful ravens
 - **Thor** — whose hammer inspired the forge hammer
 - **ntfy.sh** — for the war-horn that needs no Discord
-- **The RavenMiner pool** — for keeping the network honest
 - **PyInstaller** — for sealing the serpent into a single stone
+- **Pillow / LANCZOS** — for the supersampled glow that makes graphs breathe
 - **Alan Klusacek** — for carving the first rune
 
 ---
@@ -235,6 +240,6 @@ Use it, fork it, forge it anew. Give credit where the mead flows.
 ```
 ᚠᛖᚺᚢ ᛏᛁᚹᚨᛉ ᛟᛞᛁᚾᚾ
   The forge burns eternal.
-  R A V E N M I N E R  H Q   v 5 . 2 . 1 0
+  R A V E N M I N E R  H Q   v 5 . 4 . 9
 ᚠ ᚢ ᚨ ᚱ ᚲ ᚷ ᚹ — ᛏ ᛒ ᛗ — ᛜ ᛞ ᛟ
 ```

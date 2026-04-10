@@ -1,0 +1,7 @@
+# RavenMiner HQ — Requirements
+# Install with: pip install -r requirements.txt
+
+requests>=2.28.0
+Pillow>=9.0.0
+pystray>=0.19.0
+pyinstaller>=5.0.0

@@ -8,8 +8,6 @@
 
 ## ᛟ Requirements — What the Forge Demands
 
-Before the ravens fly, the forge must be fed.
-
 **Python 3.10 or higher** is required.
 Install all dependencies from the world tree:
 
@@ -34,7 +32,7 @@ sudo dnf install python3-tkinter
 Launch the longhouse from the project root:
 
 ```bash
-python Ravenminer_HQ_5_4_0.py
+python Ravenminer_HQ_5_4_9.py
 ```
 
 On first invocation, a settings scroll will appear.
@@ -90,8 +88,7 @@ notification service. No account required. One HTTP POST, any phone on Earth.
 6. Save settings
 
 > *Your topic name is your password on the public server.*
-> *For maximum privacy, self-host ntfy on your own machine — change the URL to*
-> *`http://192.168.x.x/your-topic` and nothing leaves your network.*
+> *For maximum privacy, self-host ntfy on your own machine.*
 
 **Alerts that will reach your phone:**
 
@@ -108,8 +105,6 @@ notification service. No account required. One HTTP POST, any phone on Earth.
 ---
 
 ## 📊 The Five Gauges — Left Column
-
-The left column now displays five analogue arc gauges:
 
 | Gauge | Colour | Warn | Crit |
 |---|---|---|---|
@@ -133,14 +128,31 @@ The bottom bar has four configurable entries (right to left):
 | `Ping avg s` | TEAL | Ping rolling average window |
 | `Avg s` | ORANGE | CURRENT (A) + CORE VOLTAGE (mV) rolling average window |
 
-Type a new value and press `Return` or click away. Floors and ceilings
-are enforced — the field resets if you enter an illegal value.
+Type a new value and press `Return` or click away.
+
+---
+
+## 💓 Ping ECG Graph — The Heartbeat Display
+
+The bottom bar now shows a living ECG waveform below the ping value.
+
+- The number displays raw rolling-average ping (no `ms` suffix — the waveform speaks for itself)
+- The graph reads from the same ping history buffer as the rolling average
+- Colours automatically by current latency:
+
+| Colour | Threshold | Omen |
+|---|---|---|
+| 🟢 Cyan `#00ffcc` | < 50 ms | Swift as Sleipnir — all is well |
+| 🟠 Orange `#ffaa00` | < 120 ms | Bifrost at dusk — watch the horizon |
+| 🔴 Red `#ff3344` | ≥ 120 ms | Ragnarök approaches — check your network |
+
+When Pillow is installed, the graph uses 2× LANCZOS supersampling and
+three-pass glow rendering (haze → bloom → core line) with white-centred
+data dots every 3rd sample — the same pipeline as the hashrate history graph.
 
 ---
 
 ## 📶 WiFi Signal — Reading the Ether
-
-The right column shows the miner's WiFi RSSI and SSID live:
 
 | Colour | Threshold | Omen |
 |---|---|---|
@@ -148,36 +160,13 @@ The right column shows the miner's WiFi RSSI and SSID live:
 | 🟠 ORANGE | -60 to -75 dBm | Marginal — watch for drop-outs |
 | 🔴 RED | < -75 dBm | Weak — the signal frays |
 
-If RSSI shows `---`, your NerdQaxe firmware does not expose `wifiRSSI`.
-Update firmware or treat as informational.
-
----
-
-## 🌊 Ping Colours — Reading the Tide
-
-The rolling ping display speaks in colour:
-
-| Colour | Threshold | Omen |
-|---|---|---|
-| 🟢 GREEN | below 50 ms | Swift as Sleipnir — all is well |
-| 🟠 ORANGE | below 120 ms | Bifrost at dusk — watch the horizon |
-| 🔴 RED | 120 ms+ | Ragnarök approaches — check your network |
-
-Ping is TCP-born, non-blocking, daemon-threaded.
-`pinginflight` stands guard — threads do not pile like corpses.
-
 ---
 
 ## 🔵 Best-Diff Pulse — The Breathing Counter
 
-The Best-Diff value breathes in **blue** (`#00aaff`) when no new record
-is being set — a slow sine-phase animation driven by `bddiffpulse()`.
-
-When a **new personal best** is registered:
-- A fast **red bounce** fires for a short window
-- The bounce expires (`bdreduntil` epoch) and the label returns to blue breathe
-- Two gold **flanking runes** cycle through the Elder Futhark, left and right,
-  never in sync
+The Best-Diff value breathes in **blue** (`#00aaff`) at rest.
+On a **new personal best**: fast red bounce fires, then returns to blue breathe.
+Two gold flanking runes cycle through the Elder Futhark, never in sync.
 
 ---
 
@@ -190,23 +179,17 @@ Right-click the tray icon to:
 - **⚡ NEW DIFFICULTY** — appears when `bestSessionDiff` surpasses 50M
 - **Quit** — extinguish the forge
 
-> *The unseen watcher never sleeps.*
-
 ---
 
 ## 📜 Source Code Viewer
 
-The in-app source viewer opens the running `.py` file in a syntax-highlighted
-scrollable window. Features:
-
-- **Keywords** — lavender `#cc99ff`
-- **Strings** — green `#a8ff78`
-- **Comments** — italic grey `#555577`
-- **Numbers** — gold `#ffcc44`
-- **`def` / `class`** — GOLDBRIGHT bold
-
-The viewer is read-only. Horizontal and vertical scrollbars included.
-Line count shown in the footer.
+| Highlight | Colour |
+|---|---|
+| Keywords | Lavender `#cc99ff` |
+| Strings | Green `#a8ff78` |
+| Comments | Italic grey `#555577` |
+| Numbers | Gold `#ffcc44` |
+| `def` / `class` | GOLDBRIGHT bold |
 
 ---
 
@@ -214,7 +197,7 @@ Line count shown in the footer.
 
 **ntfy test alert sent but phone does not buzz**
 → Confirm the ntfy app is installed and subscribed to your exact topic name.
-  The topic name is case-sensitive. Check for trailing spaces in the URL field.
+  The topic name is case-sensitive.
 
 **Voltage / Current gauges show 0 or ---**
 → Your NerdQaxe firmware may not expose `coreVoltageActual` / `currentA`.
@@ -227,35 +210,23 @@ Line count shown in the footer.
 → You must (1) enable the toggle, (2) slide to 100, AND (3) hold for 2 seconds.
   Releasing early cancels. This is intentional.
 
+**Ping graph is flat / blank**
+→ Requires at least 2 successful TCP pings. Confirm miner IP is reachable.
+  Install Pillow (`pip install Pillow`) for the supersampled renderer.
+
 **Dashboard still shows LIVE after reboot command**
-→ Fixed in v5.4.0. Update to current version if still occurring.
-
-**ntfy alert error: codec can't encode character**
-→ Fixed in v5.2.0. Emoji are now carried by the `Tags` field, not the header.
-
-**`[RavenMiner] ignored error: lbl_refresh_stat` spam in console**
-→ Fixed in v5.2.1. Update to current version.
-
-**The miner IP is not found after settings change**
-→ The IP fallback rune `self.cfg.get("minerip", MINERIP)` holds the last known
-  address. Save settings again to re-anchor.
-
-**Hashrate graph refresh is too fast / erratic**
-→ The floor is `0.10` seconds. Do not set below this.
+→ Fixed in v5.2.9. Update to current version if still occurring.
 
 ---
 
 ## ᛞ Packaging — For the Uninitiated
 
-To forge a standalone executable for those who do not speak Python:
-
 ```bash
 pip install pyinstaller
-pyinstaller --onefile --windowed --icon=assets/huginn.ico Ravenminer_HQ_5_4_0.py
+pyinstaller --onefile --windowed --icon=assets/huginn.ico Ravenminer_HQ_5_4_9.py
 ```
 
-The compiled relic will appear in `dist/`.
-Carry it to any Windows machine without Python installed.
+Or use **RavenForge** (`python ravenforge_v2.py`) — the animated GUI build assistant.
 
 ---
 
@@ -263,13 +234,15 @@ Carry it to any Windows machine without Python installed.
 
 ```
 RavenAxe-BTCMiner-HQ/
-├── Ravenminer_HQ_5_4_0.py  ← The forge itself
-├── ravenminer_config.json    ← The sacred scroll (auto-generated)
-├── ravenminer_alerts.json    ← Alert thresholds & ntfy topic (auto-generated)
-├── requirements.txt          ← The dependencies of Yggdrasil
-├── CHANGELOG.md              ← Every rune carved since the beginning
-├── Release-Notes.md          ← The chronicle of this release
-├── instructions.md           ← This very codex
+├── Ravenminer_HQ_5_4_9.py   ← The forge itself
+├── ravenforge_v2.py           ← The animated build assistant
+├── ravenminer_config.json     ← The sacred scroll (auto-generated)
+├── ravenminer_alerts.json     ← Alert thresholds & ntfy topic (auto-generated)
+├── requirements.txt           ← The dependencies of Yggdrasil
+├── CHANGELOG.md               ← Every rune carved since the beginning
+├── Release-Notes.md           ← The chronicle of this release
+├── instructions.md            ← This very codex
+├── RavenForge_Instructions.md ← RavenForge usage guide
 └── assets/
     ├── huginn.ico             ← Thought, watching from the tray
     └── vegvisir.png           ← The wayfinding sigil
@@ -292,5 +265,5 @@ RavenAxe-BTCMiner-HQ/
 *May your uptime be eternal.*
 *The ravens watch. The Allfather approves.*
 
-**R A V E N M I N E R H Q**
+**R A V E N M I N E R  H Q  v 5 . 4 . 9**
 ᚠ ᚢ ᚨ ᚱ ᚲ ᚷ ᚹ — ᛏ ᛒ ᛗ — ᛜ ᛞ ᛟ

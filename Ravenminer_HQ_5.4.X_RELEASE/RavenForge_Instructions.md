@@ -4,7 +4,7 @@
 > *The forge does not merely build.*
 > *It breathes, pulses, and watches — an instrument of the Allfather.*
 
-**Version: 5.4.0** — ᚢ URUZ · The Forge Reborn  
+**Version: 5.4.0** — ᚢ URUZ · The Forge Reborn
 *April 9, 2026*
 
 ᚠ ᚢ ᚨ ᚱ ᚲ ᚷ ᚹ ᚺ ᚾ ᛁ ᛃ ᛇ ᛈ ᛉ ᛊ ᛏ ᛒ ᛖ ᛗ ᛚ ᛜ ᛞ ᛟ
@@ -108,11 +108,9 @@ The finished `.exe` lands in `dist\`.
 
 **Viking font not showing**
 → Place `Viking.ttf` in the same folder as `ravenforge_v2.py`.
-  Detected and registered automatically — no manual Windows font install needed.
 
 **Icon preview is blank / shows rune placeholder**
 → Install Pillow: `pip install Pillow`
-  Without Pillow, the chooser shows a rune placeholder but still sets the icon path.
 
 **Build fails: `pyinstaller not found`**
 → RavenForge installs PyInstaller automatically before building.
@@ -135,12 +133,12 @@ The finished `.exe` lands in `dist\`.
 
 ## 🧙 About the Author
 
-Built with fire and runes by **Son of Odin**  
+Built with fire and runes by **Son of Odin**
 Former USMC RECON · Coder · Pagan · Miner
 
 > *Huginn and Muninn — Thought and Memory — fly with every build.*
 
-📧 [sonofodin@outlook.com](mailto:sonofodin@outlook.com)  
+📧 [sonofodin@outlook.com](mailto:sonofodin@outlook.com)
 🐙 [github.com/Raven-Black00](https://github.com/Raven-Black00)
 
 ---
