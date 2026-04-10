@@ -1,0 +1,7 @@
+requests>=2.28.0
+Pillow>=9.0.0
+pystray>=0.19.0
+pyinstaller>=5.0.0
+
+# Install with: pip install -r requirements.txt
+# winsound is part of the Python standard library on Windows — no install needed.
