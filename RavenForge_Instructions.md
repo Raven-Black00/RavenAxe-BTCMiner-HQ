@@ -1,124 +1,67 @@
-# RavenForge Instructions — The Keeper’s Codex
+# RavenForge — The Viking Forge GUI
 
-> The forge does not merely build. It breathes, pulses, and watches — an instrument of the Allfather.
-
-**Version 5.4.0 URUZ — The Forge Reborn — April 9, 2026**
+RavenForge is the animated GUI build assistant for RavenMiner HQ. It wraps PyInstaller in a Viking-themed interface complete with animated Vegvisir compass, rune particles, and gold pulsing title.
 
 ---
 
-## What Is RavenForge?
+## Starting RavenForge
 
-RavenForge is a graphical build assistant for RavenMiner HQ — it automates the full PyInstaller packaging workflow: dependency installation, spec file generation, `.exe` compilation, and output delivery. Forged in Python + tkinter and sealed with PyInstaller into a single `.exe`.
+**Option A — Pre-built .exe (Windows)**
 
----
+Double-click `RavenForge.exe` in the repo root. No Python needed.
 
-## Requirements
-
-| Rune | Dependency | Purpose |
-|------|-----------|--------|
-| FEHU | Python 3.10+ | The serpent of Midgard |
-| ANSUZ | pip | Summons dependencies |
-| TIWAZ | PyInstaller | Forges the `.exe` |
-| KENAZ | Pillow (optional) | Icon preview in the chooser |
-
----
-
-## Installation
+**Option B — From source**
 
 ```bash
-git clone https://github.com/Raven-Black00/RavenAxe-BTCMiner-HQ.git
-cd RavenAxe-BTCMiner-HQ
-python ravenforgev2.py
+pip install -r requirements.txt
+python RavenForge.py
 ```
 
-No separate install step required — RavenForge handles its own dependencies before each build.
+---
+
+## Build Steps
+
+1. **Select Script** — Browse to `RavenminerHQ551.py`
+2. **Select Icon** (optional) — Browse to a `.ico` file
+3. **Set Output Name** — Default: `RavenminerHQ551`
+4. **Click FORGE** — Vegvisir spins, rune particles fly, build log scrolls
+5. **Collect .exe** — Find it in `dist/RavenminerHQ551.exe`
 
 ---
 
-## Viking Font Setup (Optional but Recommended)
+## Build Flags Used
 
-RavenForge uses **Viking Regular** for the pulsing gold title.
-
-1. Obtain `Viking.ttf` (Viking Regular — free download)
-2. Place it in any of these locations:
-   - Same folder as `ravenforgev2.py` (easiest)
-   - `C:\Windows\Fonts\`
-   - `%LOCALAPPDATA%\Microsoft\Windows\Fonts\`
-   - `.fonts/` subfolder
-
-RavenForge detects and registers it automatically via Windows GDI at startup. If absent, it falls back: Palatino Linotype → Book Antiqua → Georgia.
-
----
-
-## Build Workflow
-
-### Step 1 — Select Your Script
-Click **Browse** and navigate to your `RavenminerHQ551.py` source file.
-
-### Step 2 — Choose an Icon (Optional)
-Click the icon chooser canvas. A file dialog opens — select `.ico`, `.png`, `.jpg`, or `.bmp`. A live 64×64 preview renders immediately via PIL. Click **clear** to remove the selection.
-
-### Step 3 — Configure Options
-- **One File** — bundles everything into a single `.exe` (recommended)
-- **Windowed** — suppresses the console window on launch
-- **Install Reqs** — runs `pip install -r requirements.txt` before building
-
-### Step 4 — Forge
-Click **FORGE**. The button breathes gold while idle and dims when building. Progress is shown step-by-step — cyan pulse on active steps, green/red lock-in on completion. The finished `.exe` lands in `dist/`.
-
----
-
-## The Animated Interface
-
-| Element | Animation | Meaning |
-|---------|-----------|--------|
-| RAVENFORGE title | Gold pulse, Viking font, 36pt | The forge is awake |
-| Vegvisir compass | Rotating rune ring + spoke pulse | Wayfinding — build finds its path |
-| Rune particle field | Drifting Elder Futhark | The old gods watch |
-| GlowLine borders | Sweeping gold/purple gradient | Power flows through the longhouse |
-| FORGE button | Gold breathe (idle only) | Ready to strike |
-| Active step rows | Cyan pulse | Step is running |
-| Console rune ticker | Cycling dim colours | Heartbeat of the forge |
-| Side rune banners | Independent rotation cycles | Left and right sentinels |
+| Flag | Effect |
+|------|--------|
+| `--onefile` | Single `.exe` (no `_internal/` folder) |
+| `--windowed` | No console window on launch |
+| `--icon` | Custom icon (if provided) |
+| `--name` | Output executable name |
 
 ---
 
 ## Troubleshooting
 
-| Symptom | Cure |
-|---------|------|
-| New RavenForge windows keep appearing during build | Fixed in v5.4.0 (BUG-F01). Update to current version. |
-| Viking font not showing | Place `Viking.ttf` in the same folder as `ravenforgev2.py`. |
-| Icon preview is blank / shows rune placeholder | Install Pillow: `pip install Pillow` |
-| Build fails — pyinstaller not found | RavenForge installs PyInstaller automatically before building. If it fails, run `pip install pyinstaller` manually and retry. |
-| pystray import error in console | Tray icon support disabled. The build continues. Install with `pip install pystray`. |
+| Symptom | Fix |
+|---------|-----|
+| RavenForge.exe blocked by Defender | Allow once — false positive |
+| PyInstaller not found | `pip install pyinstaller` |
+| Build fails with missing module | `pip install <module>` then retry |
+| Icon not applied | Must be `.ico` format, not `.png` |
+| .exe crashes on launch | Run from terminal to see traceback |
 
 ---
 
-## Related Projects
+## Notes
 
-| Project | Description |
-|---------|------------|
-| RavenMiner HQ | Full ASIC mining dashboard monitor |
-| VinylVixzen | Etsy Shop — Esoteric embroidery & decals by Kathryn |
-
----
-
-## About the Author
-
-Built with fire and runes by **Son of Odin**  
-Former USMC RECON • Coder • Pagan Miner  
-Huginn and Muninn — Thought and Memory — fly with every build.
-
-[sonofodin@outlook.com](mailto:sonofodin@outlook.com) • [github.com/Raven-Black00](https://github.com/Raven-Black00)
-
----
-
-MIT License — forge freely, credit the ravens.
+- The forge bundles `RavenminerHQ551.py` and all dependencies into one file
+- The embedded Viking war-horn WAV travels inside the `.exe` — no separate audio file needed
+- First run after build may trigger Windows Defender — this is normal for PyInstaller builds
+- Build time: approximately 60–120 seconds depending on PC speed
 
 ---
 
 ```
-R A V E N M I N E R   H Q   v 5 . 5 . 1
-May your hashes flow true and your blocks be found.
+R A V E N F O R G E
+May the forge fires burn hot. May the runes hold true.
 ```
