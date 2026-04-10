@@ -1,244 +1,238 @@
-# RAVENMINER HQ — Instructions
-### ᚱᚨᚹᛖᚾ · The Keeper's Codex · v5.0.5
+# RAVENMINER HQ Instructions — The Keeper’s Codex
 
-> *The longhouse does not run itself.*  
-> *Read these runes before you light the forge.*  
-> *Ignore them and the wolves will find you first.*
+> The longhouse does not run itself. Read these runes before you light the forge.
 
 ---
 
-## ᛟ Requirements — What the Forge Demands
+## Requirements — What the Forge Demands
 
-**Python 3.10 or higher** is required.  
-Install all dependencies from the World Tree:
+Python 3.10 or higher is required. Install all dependencies from the world tree:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-If `tkinter` is missing on Linux:
+If `tkinter` is missing on Linux, summon it thus:
 
 ```bash
 # Debian / Ubuntu
 sudo apt install python3-tk
-
 # Fedora / RHEL
 sudo dnf install python3-tkinter
-
-# Arch
-sudo pacman -S tk
 ```
 
 ---
 
-## ᚠ First Run — Carving the First Rune
+## First Run — Carving the First Rune
 
 Launch the longhouse from the project root:
 
 ```bash
-python Ravenminer_HQ_5.0.5.py
+python RavenminerHQ551.py
 ```
 
-On first invocation, a Settings scroll appears automatically.  
-Fill the sacred fields or the ravens fly blind.  
-Two config scrolls are conjured beside the script:
-
-| File | Purpose |
-|------|---------|
-| `ravenminer_config.json` | Miner IP, refresh interval, rolling average window |
-| `ravenminer_alerts.json` | Discord webhook URL, alert thresholds, toggles |
+On first invocation, a settings scroll will appear. Fill the sacred fields or the ravens fly blind.
 
 ---
 
-## ᚨ Configuration — The Settings Scroll
+## Configuration — The Settings Scroll
 
-Open Settings from the tray icon right-click menu or the in-app menu bar.
+Open the settings panel from the tray icon or the menu. The following runes must be carved:
 
-| Rune | Field | Purpose |
-|------|-------|---------|
-| ᛗ | `minerip` | IP address of your NerdQaxe++ rig |
-| ᚢ | `stratumUser` | Your miner's true name (burns gold on the ping row) |
-| ᛞ | `discord_webhook` | The war-horn URL — from Discord channel → Integrations → Webhooks |
-| ᛏ | `pingavgwindow` | Rolling ping window in seconds (default: 60) |
-| ᚱ | `hrrefreshvar` | Hashrate graph refresh rate — floor is 0.10 seconds |
-| ᚾ | `avg_window` | Rolling average window for current & core volt (1.0–10.0 s) |
+| Rune Field | Purpose |
+|------------|--------|
+| `miner_ip` | IP address of your mining rig |
+| `stratumUser` | Your miner’s true name (burns gold on the ping row) |
+| `ntfy_topic` | ntfy push URL e.g. `https://ntfy.sh/your-secret-topic` |
+| `ping_avg_window` | Rolling ping window in seconds (default 60) |
+| `hr_refresh_var` | Hashrate graph refresh rate (floor is 0.10 seconds) |
 
-Settings are cached in memory and written to JSON on save.  
-**Do not edit the JSON files by hand** unless you speak the machine tongue.
+Settings are cached in memory and written to `ravenminer-alerts.json` on save. Do not edit JSON files by hand unless you speak the machine tongue.
 
 ---
 
-## 🏆 Discord Milestones — The War-Horn
+## Reboot — The Slide-to-Confirm Guard
 
-As of **v5.0.5**, the Discord alert system works as follows:
+The reboot control in Settings requires three deliberate steps to fire:
 
-**🏆 NEW MILESTONE** fires at every 50M difficulty rung crossed during a session:
-- 50M → alert
-- 100M → alert
-- 150M → alert
-- 200M → alert (and so on — **no ceiling**)
+1. Enable the toggle switch — the label turns RED reading `ON`
+2. Slide the bar to 100 — the label reads as you drag
+3. Hold at 100 for 2 seconds — the label reads `HOLD — rebooting…`
 
-**Large jumps are handled correctly.** If your difficulty leaps from 40M to 175M
-in a single poll, the war-horn fires three times in order:  
-`50M → 100M → 150M`. No rung is skipped or silently swallowed.
-
-**⚡ NEW BEST DIFFICULTY alerts have been retired** (v5.0.5). They were too eager.  
-Milestones speak when something worth celebrating has actually been crossed.
-
-### Arming the War-Horn
-
-1. Open your Discord server
-2. Navigate to **Channel Settings → Integrations → Webhooks**
-3. Create a new webhook and copy the URL
-4. Paste it into the `discord_webhook` field in Settings
-5. Save — the horn is armed
-
-> *Odin does not whisper. But even Odin chooses his moments.*
+Releasing the slider before the 2-second hold expires cancels the reboot. The moment a reboot is confirmed, the dashboard immediately shows `CONNECTION LOST` — the forge does not pretend the miner is still breathing.
 
 ---
 
-## 🌊 Ping Colours — Reading the Tide
+## ntfy.sh — The New War-Horn
 
-The rolling ping display speaks in colour:
+Discord has been replaced with ntfy.sh — a free, open-source push notification service. No account required. One HTTP POST, any phone on Earth.
+
+To arm the war-horn:
+
+1. Install the **ntfy** app on your phone (Android: Play Store / F-Droid, or iOS)
+2. Choose a secret topic name — make it long and random: `https://ntfy.sh/ravenminer-alan-x7q9mz3p`
+3. Open Settings in RavenMiner HQ → NTFY.SH ALERTS
+4. Paste the full URL into the **ntfy Topic URL** field
+5. Click **TEST NOTIFY** — your phone should buzz within seconds
+6. Save settings
+
+Alerts that will reach your phone:
+
+| Alert | When | Priority |
+|-------|------|----------|
+| MINER OVERHEAT | ASIC temp > threshold | High |
+| VR OVERHEAT | VR temp > threshold | High |
+| MINER OFFLINE | 6 consecutive failed polls | High |
+| BLOCK FOUND | New block confirmed | High |
+| REJECTED SPIKE | 5 shares rejected | Default |
+| LOW HASHRATE | Hashrate < threshold | Default |
+| NEW MILESTONE | Every 50M difficulty crossed | Default |
+
+---
+
+## Startup & Block-Found Horn
+
+On Windows, a Viking war-horn plays:
+
+1. **At startup** — the moment the longhouse opens
+2. **Every time a block is found** — alongside the visual block flash
+
+The WAV is embedded inside the script — no external file is needed.  
+On Linux or macOS the horn is a silent no-op. `winsound` is Windows stdlib — no install required.
+
+---
+
+## The Five Gauges — Left Column
+
+| Gauge | Colour | Warn | Crit |
+|-------|--------|------|------|
+| ASIC TEMP | ORANGE | 55°C | 70°C |
+| VR TEMP | CYAN | 50°C | 65°C |
+| VOLTAGE | GREEN | 11.9 V | 11.5 V (lo 10.0, hi 13.5) |
+| CURRENT | ORANGE | 10.0 A | 12.0 A (lo 0.0, hi 15.0) |
+
+Each gauge needle turns RED when the critical threshold is crossed.
+
+---
+
+## Rolling Averages — The Avg Window
+
+The bottom bar has four configurable entries (right to left):
+
+| Entry | Colour | Controls |
+|-------|--------|----------|
+| Refresh (s) | CYAN | Main API poll interval (floor 0.10 s) |
+| Graph (s) | GOLD | Hashrate bar graph redraw rate (floor 0.10 s) |
+| Ping avg (s) | TEAL | Ping rolling average window |
+| Avg (s) | ORANGE | CURRENT A + CORE VOLTAGE mV rolling average window |
+
+Type a new value and press Return or click away.
+
+---
+
+## Ping ECG Graph — The Heartbeat Display
+
+The bottom bar now shows a living ECG waveform below the ping value.
 
 | Colour | Threshold | Omen |
 |--------|-----------|------|
-| 🟢 GREEN | below 50 ms | Swift as Sleipnir — all is well |
-| 🟠 ORANGE | below 120 ms | Bifrost at dusk — watch the horizon |
-| 🔴 RED | 120 ms+ | Ragnarök approaches — check your network |
+| Cyan `#00ffcc` | ≤ 50 ms | Swift as Sleipnir — all is well |
+| Orange `#ffaa00` | ≤ 120 ms | Bifrost at dusk — watch the horizon |
+| Red `#ff3344` | > 120 ms | Ragnarök approaches — check your network |
 
-Ping is TCP-born, non-blocking, daemon-threaded.  
-`ping_inflight` stands guard — threads do not pile like corpses.
+- The number displays raw rolling-average ping (no ms suffix) — the waveform speaks for itself
+- The graph reads from the same ping history buffer as the rolling average
+- Colours automatically by current latency
+
+When Pillow is installed, the graph uses 2× LANCZOS supersampling and three-pass glow rendering (haze → bloom → core line) with white-centred data dots every 3rd sample.
 
 ---
 
-## ᛒ The Tray Daemon — The Unseen Watcher
+## WiFi Signal — Reading the Ether
 
-RavenMiner HQ lives in your system tray when minimised.  
-Right-click the tray icon to:
+| Colour | Threshold | Omen |
+|--------|-----------|------|
+| GREEN | > -60 dBm | Strong — the ether is clear |
+| ORANGE | -60 to -75 dBm | Marginal — watch for drop-outs |
+| RED | < -75 dBm | Weak — the signal frays |
+
+---
+
+## Best-Diff Pulse — The Breathing Counter
+
+The Best-Diff value breathes in blue `#00aaff` at rest. On a new personal best, a fast red bounce fires, then returns to blue breathe. Two gold flanking runes cycle through the Elder Futhark, never in sync.
+
+---
+
+## The Tray Daemon — The Unseen Watcher
+
+RavenMiner HQ lives in your system tray when minimised. Right-click the tray icon to:
 
 - **Show** — summon the longhouse to the foreground
-- **⚡ NEW DIFFICULTY** — fires as a pop-up when a new personal best is set
+- **NEW DIFFICULTY** — appears when `bestSessionDiff` surpasses 50M
 - **Quit** — extinguish the forge
 
-> *The unseen watcher never sleeps.*  
-> *Even when the window is gone, the wolves are still counted.*
+---
+
+## Source Code Viewer
+
+| Highlight | Colour |
+|-----------|--------|
+| Keywords | Lavender `#cc99ff` |
+| Strings | Green `#a8ff78` |
+| Comments | Italic grey `#555577` |
+| Numbers | Gold `#ffcc44` |
+| def / class | GOLDBRIGHT bold |
 
 ---
 
-## 📊 Gauge Reference
+## Troubleshooting — When Hail Falls
 
-| Gauge | Source Field | Colour Thresholds |
-|-------|-------------|-------------------|
-| ASIC Temp | `temp` | GREEN < 60 °C · ORANGE < 75 °C · RED ≥ 75 °C |
-| VR Temp | `vrTemp` | GREEN < 60 °C · ORANGE < 80 °C · RED ≥ 80 °C |
-| Fan Speed | `fanspeed` | Displayed as % — no alert threshold by default |
-| Input Current | `inputCurrent` | 10 s rolling avg (v4.0.4+) |
-| Core Volt | `coreVoltageActual` | 10 s rolling avg (v4.0.4+) |
-| Best Diff | `bestSessionDiff` | Tray popup + milestone webhook every 50M |
-| Hashrate | `hashRate` | Alert if below user-set floor |
-| Rejected % | derived | GREEN < 2% · ORANGE < 5% · RED ≥ 5% |
-
----
-
-## ᛜ Troubleshooting — When Hail Falls
-
-**The widget shows stale ping values**  
-→ Fixed in v3.9.7+. `t2, f2` are captured before thread exit.  
-  Ensure you are running the latest version.
-
-**Settings panel crashes on empty alert fields**  
-→ Fixed in v3.9.5+. `float(raw) or 0` guards the ValueError wolf.  
-  Update and re-enter your settings.
-
-**The miner IP is not found after settings change**  
-→ The fallback rune `self.cfg.get("minerip", MINERIP)` holds the last known  
-  address. Save settings again to re-anchor.
-
-**Hashrate graph refresh is too fast / erratic**  
-→ The floor is `0.10` seconds (v3.9.6+). Do not set below this.  
-  The harvest will be crooked if you do.
-
-**Discord webhook is silent**  
-→ Verify the URL has no trailing spaces or newlines.  
-→ Milestones fire every 50M — confirm your diff has crossed a rung.  
-→ The old `⚡ NEW BEST DIFFICULTY` alert was removed in v5.0.5.
-
-**Milestone fired again after a reconnect**  
-→ Fixed in v5.0.4 (BUG#12). Resets only occur when uptime also drops  
-  below 60 s. Transient API zeros no longer wipe the milestone ladder.
-
-**A large jump skipped some milestones**  
-→ Fixed in v5.0.4 (BUG#11). The while loop now marches all uncrossed  
-  rungs in order. No milestone is swallowed by a large jump.
-
-**Window is tiny or collapses on tray restore**  
-→ Fixed in v4.0.1. Geometry is flushed and animation delayed 400 ms  
-  before bars begin painting. Update to the latest version.
+| Symptom | Cure |
+|---------|------|
+| ntfy test alert sent but phone does not buzz | Confirm the ntfy app is installed and subscribed to your exact topic name. Topic name is case-sensitive. |
+| Voltage / Current gauges show 0 or `---` | Firmware may not expose `coreVoltageActual` / `currentA`. Update to latest NerdQaxe firmware. |
+| WiFi RSSI shows `--- dBm` | Firmware does not expose `wifiRSSI`. Ignore or update firmware. |
+| Reboot slider won’t fire | You must (1) enable the toggle, (2) slide to 100, AND (3) hold for 2 seconds. Releasing early cancels. |
+| Ping graph is flat / blank | Requires at least 2 successful TCP pings. Confirm miner IP is reachable. Install Pillow for supersampled renderer. |
+| Dashboard still shows LIVE after reboot | Fixed in v5.2.9. Update if still occurring. |
+| No startup or block-found horn | Requires Windows. `winsound` is stdlib — no install needed. Confirm `WINSOUND_OK` is True. |
 
 ---
 
-## ᛞ Packaging — For the Uninitiated
-
-To forge a standalone `.exe` for those who do not speak Python:
+## Packaging — For the Uninitiated
 
 ```bash
 pip install pyinstaller
-pyinstaller --onefile --windowed --icon=assets/huginn.ico Ravenminer_HQ_5.0.5.py
+pyinstaller --onefile --windowed --icon=assets/huginn.ico RavenminerHQ551.py
 ```
 
-Or use the included batch forge hammer:
-
-```bash
-RavenMiner_BUILD_5.0.5.bat
-```
-
-The compiled relic appears in `dist\`.  
-Carry it to any Windows machine without Python installed.
+Or use RavenForge (`python ravenforgev2.py`) — the animated GUI build assistant.
 
 ---
 
-## ᚷ File Structure — The Bones of the Longhouse
+## File Structure — The Bones of the Longhouse
 
 ```
-ravenminer-hq/
-├── Ravenminer_HQ_5.0.5.py       ← The forge itself
-├── RavenMiner_BUILD_5.0.5.bat   ← The hammer
-├── ravenminer_config.json       ← The sacred scroll (auto-generated)
-├── ravenminer_alerts.json       ← The war-horn scroll (auto-generated)
-├── requirements.txt             ← The dependencies of Yggdrasil
-├── README.md                    ← The longhouse overview
-├── CHANGELOG.md                 ← Every wound healed in the codeforge
-├── Release-Notes.md             ← The herald's crier
-├── instructions.md              ← This very codex
+RavenAxe-BTCMiner-HQ/
+├── RavenminerHQ551.py          The forge itself
+├── ravenforgev2.py             The animated build assistant
+├── ravenminer-config.json      The sacred scroll (auto-generated)
+├── ravenminer-alerts.json      Alert thresholds + ntfy topic (auto-generated)
+├── requirements.txt            The dependencies of Yggdrasil
+├── CHANGELOG.md                Every rune carved since the beginning
+├── Release Notes.md            The chronicle of this release
+├── instructions.md             This very codex
+├── RavenForge_Instructions.md  RavenForge usage guide
 └── assets/
-    ├── huginn.ico               ← Thought, watching from the tray
-    └── vegvisir.png             ← The wayfinding sigil
+    ├── huginn.ico              Thought, watching from the tray
+    └── vegvisir.png            The wayfinding sigil
 ```
 
 ---
 
-## ᛟ Attribution
-
-This software was forged by **Alan Klusacek** (`sonofodin@outlook.com`).  
-Documentation for v5.0.5 was crafted with the aid of **Perplexity AI**,  
-who read the runes and wrote them back truer.
-
----
-
 ```
-      H       M
-     / \     / \
-    / U \   / U \
-   / G   \ / N   \
-  / I     V    I  \
-  ______RAVENMINER HQ______
-  ᚠᛖᚺᚢ  ᛏᛁᚹᚨᛉ  ᛟᛞᛁᚾᚾ
+R A V E N M I N E R   H Q   v 5 . 5 . 1
+May your difficulty be low. May your uptime be eternal.
+The ravens watch. The Allfather approves.
 ```
-
-*May your difficulty be low.*  
-*May your uptime be eternal.*  
-*The ravens watch. The Allfather approves.*
-
-**R A V E N M I N E R  H Q**  
-`ᚠ ᚢ ᚨ ᚱ ᚲ ᚷ ᚹ — ᛏ ᛒ ᛗ — ᛜ ᛞ ᛟ`

@@ -1,84 +1,82 @@
-# RAVENMINER HQ — Release Notes
+# RAVENMINER HQ Release Notes — 5.5.1 GEBO — The Horn of Odin
 
+**April 10, 2026**
 
-
-## [3.9.9] — ᛟ OTHALA · The Ancestral Hall Fortified
-*The bones of the longhouse were buried deeper.*
-
-Two gifts were nailed to the World Tree:
-
-**⚡ Discord War-Horn** — Screams into the void when a new best difficulty ≥ 50M is achieved. Odin does not whisper. Neither does this webhook.
-
-**🌊 Rolling Tide Ping** — `PINGAVGWINDOW` seconds of rolling memory, colour-blooded by speed:
-- GREEN · below 50 ms · swift as Sleipnir
-- ORANGE · below 120 ms · Bifrost at dusk
-- RED · 120 ms+ · Ragnarök approaches
-
-A thread-death race condition was hunted down and fed to the wolves. `t2, f2` captured before exit. `root.after(0,...)` dispatched. The UI no longer reads the bones of dead threads.
+The longhouse has always watched in silence.  
+Now it speaks.
 
 ---
 
-## [3.9.8] — ᛒ BERKANO · The Branch Reaches Further
-*New growth on the World Tree. The miner was named.*
+## What Is 5.5.1 GEBO?
 
-The `stratumUser` — the miner's true name — was hidden in shadow. No longer. It burns gold (`#f0c040`) on the ping row for all ravens to read. The firmware label stopped wandering the ash fields and was anchored south, where it belongs.
-
----
-
-## [3.9.7] — ᚺ HAGALAZ · Hail Fell, Was Endured
-*The storm came. The ravens flew through it.*
-
-The tray now speaks: `⚡ NEW DIFFICULTY` rises like smoke when `bestSessionDiff` climbs above 50M and surpasses what came before. The thread-exit ghost was exorcised — ping values captured before the thread dies. No more stale shade haunting the widget layer.
+**GEBO** — the gift rune. The exchange between warrior and god.  
+This release gives the forge a voice: a Viking war-horn that rings on startup and again every time a block is found. The audio is not a file you can lose or forget to copy — it is embedded directly inside the script as a Base64-encoded PCM WAV. The horn is part of the forge now.
 
 ---
 
-## [3.9.6] — ᛃ JERA · The Harvest Corrected
-*What was sown crooked was reaped crooked. The field was harrowed and re-seeded.*
+## What's New in 5.5.1
 
-`applyhrrefresh()` read the wrong rune — `self.refreshvar` where `self.hrrefreshvar` was written. The graph refresh floor was raised to `0.10`. The harvest is now true.
+### Embedded Viking War-Horn (`STARTUP_WAV_B64`)
+
+A PCM WAV of a Viking war-horn is encoded in Base64 and stored as a constant in the script. No `.mp3`, no `.wav` file beside the `.exe`. The sound ships with the code.
+
+### Startup Horn
+
+`playstartupsound()` is called at the top of `__main__` before the Tk window is created. It launches a daemon thread, decodes the WAV bytes, and calls `winsound.PlaySound()` with `SND_MEMORY`. The UI initialises in parallel — you hear the horn as the longhouse opens.
+
+### Block-Found Horn
+
+Every time `foundBlocks` increases by at least one (and the initial load guard `old_blocks >= 0` passes), the horn fires alongside the existing `_trigger_block_flash()` visual. Block found = flash + horn, simultaneously.
+
+### Windows-Only, Fail-Silent
+
+`winsound` is a Windows standard-library module. The import is wrapped in a `try/except`; `WINSOUND_OK` tracks availability. On Linux or macOS the function returns immediately and the app continues without error or log spam.
 
 ---
 
-## [3.9.5] — ᛜ INGWAZ · The Seed of Stability
-*Before Dagaz, there must be darkness endured.*
+## The Fix: Why It Was Silent Before
 
-The great cyan ping eye opened — TCP-born, non-blocking, daemon-threaded. `pinginflight` stands guard so threads do not pile like corpses on a slow-network battlefield.
+The first build used `winsound.SND_MEMORY | winsound.SND_ASYNC`.  
+`SND_ASYNC` tells Windows to return immediately and play in the background.  
+Python's garbage collector then freed `wav_bytes` — the buffer Windows was still reading.  
+Result: silence, or a truncated pop.
 
-- Alert fields no longer crack on empty runes — `float(raw) or 0` catches the `ValueError` wolf before it tears the throat of the settings panel
-- IP fallback rune carved: `self.cfg.get("minerip", MINERIP)` — the miner is found, even when settings wander
+The fix: `SND_MEMORY` only. The call blocks inside the daemon thread until playback completes. The buffer stays alive. The horn rings true.
 
 ---
 
-## [3.9.4] — ᛟ OTHALA · The Foundation Stone
-*In the beginning there was nothing. Then Alan carved the first rune.*
+## Technical Summary
 
-The longhouse was raised:
+| Item | Detail |
+|------|--------|
+| Audio format | PCM WAV, 44100 Hz, mono, 16-bit |
+| Delivery | Base64-encoded constant embedded in script |
+| Playback | `winsound.PlaySound(wav_bytes, winsound.SND_MEMORY)` |
+| Threading | Daemon thread — UI never blocks |
+| Trigger 1 | `__main__` startup |
+| Trigger 2 | `new_blocks > old_blocks and old_blocks >= 0` |
+| Non-Windows | Silent no-op via `WINSOUND_OK` guard |
 
-| Pillar | Purpose |
-|---|---|
-| Three-column layout | Temperatures · Hashrate · Power |
-| Vegvisir watermark | The wayfinding sigil, always present |
-| Huginn & Muninn | Thought and memory, watching always |
-| System tray daemon | The unseen watcher |
-| Discord alerts | The war-horn to the outer world |
-| BTC price (CoinGecko) | The gold-weight, refreshed in silence |
-| Rejection % display | Shame, colour-coded green to red |
-| Alert config cache | The scroll read once, held in memory |
+---
 
----M M
-/H\ /M
-/ U \ / U
-/ G \ / N
-/ I I I
-N N
-/RAVENMINER HQ____
-ᚠᛖᚺᚢ ᛏᛁᚹᚨᛉ ᛟᛞᛁᚾᚾ
+## File Renamed
 
+| Old | New |
+|-----|-----|
+| `RavenminerHQ549.py` | `RavenminerHQ551.py` |
 
+---
 
-*May your difficulty be low.*
-*May your uptime be eternal.*
-*The ravens watch. The Allfather approves.*
+## Previous Release — 5.4.9 PERTHO — The Pulse Made Visible
 
-**R A V E N M I N E R H Q**
-ᚠ ᚢ ᚨ ᚱ ᚲ ᚷ ᚹ — ᛏ ᛒ ᛗ — ᛜ ᛞ ᛟ
+**April 10, 2026**
+
+A new `tk.Canvas` ECG-style waveform graph sits directly below the ping value and updates on every ping cycle. Three-pass glow rendering (haze / bloom / core), latency colour bands (cyan / orange / red), data-point dots every 3rd sample, filled area polygon for depth. Ping label now shows numeric value only — the waveform speaks for itself.
+
+---
+
+```
+R A V E N M I N E R   H Q   v 5 . 5 . 1
+May your difficulty be low. May your uptime be eternal.
+The ravens watch. The Allfather approves.
+```
