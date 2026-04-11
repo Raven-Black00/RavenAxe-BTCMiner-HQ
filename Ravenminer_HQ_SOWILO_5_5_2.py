@@ -11968,7 +11968,20 @@ class RavenMinerDash:
             new_a  = a2.point(lambda p, f=factor: int(p*f))
             frame.putalpha(new_a)
             self.valk_frames.append(frame)
-        print("Valknut ready:", len(self.valk_frames), "frames")
+        # v5.5.2: overbright flash frames — used only during share event
+        self.valk_flash_frames = []
+        FLASH_STEPS = 10
+        from PIL import ImageEnhance as _IE
+        for _fi in range(FLASH_STEPS):
+            _t    = _fi / max(FLASH_STEPS - 1, 1)           # 0 → 1
+            _peak = 0.45                                      # where the boost peaks (45% of the way in)
+            _boost = 1.0 + 0.85 * (1.0 - abs((_t - _peak) / max(_peak, 1 - _peak)))
+            _boost = max(1.0, _boost)
+            _frm  = base.copy()
+            _frm  = _IE.Brightness(_frm).enhance(_boost)
+            _frm  = _IE.Color(_frm).enhance(1.0 + 0.5 * (1.0 - abs((_t - _peak) / max(_peak, 1 - _peak))))
+            self.valk_flash_frames.append(_frm)
+        print("Valknut ready:", len(self.valk_frames), "frames,", len(self.valk_flash_frames), "flash frames")
         self._show_valknut_frame(self.valk_frames[-1])
 
     def _show_valknut_frame(self, pil_img):
@@ -12024,19 +12037,26 @@ class RavenMinerDash:
     def _trigger_valknut_flash(self):
         if self.valk_flash or not self.valk_frames:
             return
-        self.valk_flash = True
-        self.valk_step  = 0
+        self.valk_flash      = True
+        self.valk_step       = 0
+        self._use_flash_seq  = True   # v5.5.2: overbright sequence on share
         self._valknut_next_frame()
         self.root.after(0, self._flash_ravens)  # v3.9.3: ravens brighten on share
 
     def _valknut_next_frame(self):
-        if self.valk_step < len(self.valk_frames):
-            self._show_valknut_frame(self.valk_frames[self.valk_step])
+        # v5.5.2: choose overbright flash frames during share event
+        _seq = (self.valk_flash_frames
+                if getattr(self, '_use_flash_seq', False)
+                   and getattr(self, 'valk_flash_frames', None)
+                else self.valk_frames)
+        if self.valk_step < len(_seq):
+            self._show_valknut_frame(_seq[self.valk_step])
             self.valk_step += 1
             self.root.after(50, self._valknut_next_frame)
         else:
-            self.valk_flash = False
-            self.valk_step  = 0
+            self.valk_flash     = False
+            self.valk_step      = 0
+            self._use_flash_seq = False
             self._show_valknut_frame(self.valk_frames[-1])  # PERF-03: frames pre-rendered at init
 
     def _draw_vegvisir_bg(self):
@@ -12111,7 +12131,7 @@ class RavenMinerDash:
             if raven_size < 40:
                 return
             # v3.9.3: 50% reduced brightness — ease curve capped at 0.675 peak
-            PEAK_BRIGHTNESS = 0.675  # halfway between rest(0.35) and full(1.0)
+            PEAK_BRIGHTNESS = 1.0   # v5.5.2: full blaze on share (was 0.675)
             peak = steps // 3
             if step <= peak:
                 t = step / max(peak, 1)
@@ -12122,7 +12142,7 @@ class RavenMinerDash:
             brightness = max(0.35, min(PEAK_BRIGHTNESS, brightness))
 
             # Gold glow intensity — peaks at 90 (50% of original 180)
-            glow = int((brightness - 0.35) / (PEAK_BRIGHTNESS - 0.35) * 90)
+            glow = int((brightness - 0.35) / (PEAK_BRIGHTNESS - 0.35) * 160)  # v5.5.2: brighter glow on share
 
             _rkey = (raven_size, "flash")
             if not hasattr(self, "_raven_flash_base") or self._raven_flash_base[0] != _rkey:
