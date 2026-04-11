@@ -1,3 +1,16 @@
+
+## [5.5.2] — SOWILO — The Blaze Runs True — April 11, 2026
+
+### Added
+- **Valknut overbright flash on share** — 10-frame `valk_flash_frames` sequence built at startup using `ImageEnhance.Brightness` (peak ×1.85) + `ImageEnhance.Color` saturation spike; fires exclusively on confirmed share
+- **Ravens full-blaze on share** — `PEAK_BRIGHTNESS` raised 0.675 → 1.0; glow headroom raised 90 → 160; blazing gold-white now peaks at true full intensity
+
+### Fixed
+- **GRAPH-01** Y-axis scale labels (top & bottom) were clipped by canvas edge — vertical margin tightened from 2 px to 8 px on both ends
+- **GRAPH-02** Bar columns overlapping right-side scale labels — `sub_w` allocation corrected from hardcoded 72 → 100 (= 2 × `scale_w`); bars now end flush with label column
+
+---
+
 ## [5.5.1] — GEBO — The Horn of Odin — April 10, 2026
 
 Every block found now rings across the longhouse.
