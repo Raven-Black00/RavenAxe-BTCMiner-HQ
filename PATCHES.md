@@ -145,6 +145,90 @@ self.lbl_email.bind("<Button-1>", lambda e: _wb.open_new_tab("mailto:sonofgrimni
 
 ---
 
+
+---
+
+## PATCH 8 — Valknut Overbright Flash on Share
+
+**Location:** `_init_valknut()`, `_trigger_valknut_flash()`, `_valknut_next_frame()`
+
+```python
+# _init_valknut() — added after normal valk_frames build:
+self.valk_flash_frames = []
+FLASH_STEPS = 10
+from PIL import ImageEnhance as _IE
+for _fi in range(FLASH_STEPS):
+    _t     = _fi / max(FLASH_STEPS - 1, 1)
+    _peak  = 0.45
+    _boost = 1.0 + 0.85 * (1.0 - abs((_t - _peak) / max(_peak, 1 - _peak)))
+    _frm   = base.copy()
+    _frm   = _IE.Brightness(_frm).enhance(_boost)
+    _frm   = _IE.Color(_frm).enhance(1.0 + 0.5 * (1.0 - abs((_t - _peak) / max(_peak, 1 - _peak))))
+    self.valk_flash_frames.append(_frm)
+
+# _trigger_valknut_flash() — added flag:
+self._use_flash_seq = True   # v5.5.2: overbright sequence on share
+
+# _valknut_next_frame() — routes by flag:
+_seq = (self.valk_flash_frames
+        if getattr(self, '_use_flash_seq', False)
+           and getattr(self, 'valk_flash_frames', None)
+        else self.valk_frames)
+```
+
+**Effect:** On share the Valknut drives through 10 PIL-enhanced overbright frames (peak ×1.85 brightness, +50% saturation) instead of the normal 16-frame dim-to-bright idle sequence. Normal idle state is completely unchanged.
+
+---
+
+## PATCH 9 — Ravens Full-Blaze on Share
+
+**Location:** `_flash_ravens()`
+
+```python
+# Before
+PEAK_BRIGHTNESS = 0.675  # halfway between rest(0.35) and full(1.0)
+glow = int((brightness - 0.35) / (PEAK_BRIGHTNESS - 0.35) * 90)
+
+# After
+PEAK_BRIGHTNESS = 1.0    # v5.5.2: full blaze on share (was 0.675)
+glow = int((brightness - 0.35) / (PEAK_BRIGHTNESS - 0.35) * 160)  # v5.5.2: brighter glow on share
+```
+
+**Effect:** Ravens blaze at true full pixel intensity during a share event (was capped at 67.5%). Gold glow headroom raised 78% — blazing gold-white is substantially more dramatic.
+
+---
+
+## PATCH 10 — Hashrate Graph Y-Axis Label Clipping Fix
+
+**Location:** `_draw_bars()` — grid label loop
+
+```python
+# Before
+gy = int(h - 2 - frac * (h - 4))
+
+# After
+gy = int((h - 8) - frac * (h - 16))  # v5.5.2: 8 px top/bottom margin
+```
+
+**Effect:** Top and bottom Y-axis scale labels (gold Courier 10 bold) were clipped by the canvas edge. 2 px was insufficient for the ~12 px tall font. 8 px margin on both ends — all labels fully visible.
+
+---
+
+## PATCH 11 — Hashrate Graph Bar Overlap Fix
+
+**Location:** `_draw_bars()` — `sub_w` calculation
+
+```python
+# Before
+sub_w = max(1.0, (w - 72) / max(1, n * 8))  # hardcoded 72 didn't match scale_w=50
+
+# After
+sub_w = max(1.0, (w - 100) / max(1, n * 8))  # v5.5.2: 100 = 2 × scale_w(50)
+```
+
+**Effect:** Bar columns were bleeding 28 px into the right-side label column. `sub_w` now uses 100 px total horizontal margin (50 px each side, matching `scale_w`). Bars end flush at the label boundary.
+
+
 ## Summary
 
 | # | Location | Effect |
@@ -156,8 +240,12 @@ self.lbl_email.bind("<Button-1>", lambda e: _wb.open_new_tab("mailto:sonofgrimni
 | 5 | Block detection | Horn fires on every new block found |
 | 6 | `_draw_gauge` freq calls | Freq gauge range `400–1000` → `0–900 MHz` |
 | 7 | `lbl_email` + mailto binding | Email updated to `sonofgrimnir@outlook.com` |
+| 8 | `_init_valknut`, `_trigger_valknut_flash`, `_valknut_next_frame` | Valknut overbright 10-frame flash sequence on share |
+| 9 | `_flash_ravens` | Ravens full-blaze on share — `PEAK_BRIGHTNESS` 0.675→1.0, glow 90→160 |
+| 10 | `_draw_bars` grid loop | Y-axis label vertical margin 2 px → 8 px |
+| 11 | `_draw_bars` `sub_w` | Bar width margin corrected 72 → 100 (= 2 × scale_w) |
 
-All patches verified — Python syntax clean
+All patches verified — Python syntax clean ✓
 
 ---
 
