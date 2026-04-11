@@ -31,7 +31,7 @@ pip install -r requirements.txt
 git clone https://github.com/Raven-Black00/RavenAxe-BTCMiner-HQ.git
 cd RavenAxe-BTCMiner-HQ
 pip install -r requirements.txt
-python RavenminerHQ551.py
+python RavenminerHQ552.py
 ```
 
 ---
@@ -40,7 +40,7 @@ python RavenminerHQ551.py
 
 ```bash
 pip install pyinstaller
-pyinstaller --onefile --windowed --icon=assets/huginn.ico RavenminerHQ551.py
+pyinstaller --onefile --windowed --icon=assets/huginn.ico RavenminerHQ552.py
 ```
 
 Or use **RavenForge** — the animated GUI build assistant included in this repo.
@@ -80,6 +80,7 @@ Or use **RavenForge** — the animated GUI build assistant included in this repo
 
 | Version | Rune | Notes |
 |---------|------|-------|
+| 5.5.2 | SOWILO | Valknut & ravens full-blaze on share, hashrate graph label fixes |
 | 5.5.1 | GEBO | Viking war-horn on startup + block-found audio, embedded PCM WAV |
 | 5.4.9 | PERTHO | ECG ping graph, three-pass glow, latency colour bands |
 | 5.4.0 | URUZ | RavenForge UI overhaul, Viking font, Vegvisir compass |
@@ -96,7 +97,7 @@ Or use **RavenForge** — the animated GUI build assistant included in this repo
 MIT — free as the wind over Asgard.
 
 ```
-R A V E N M I N E R   H Q   v 5 . 5 . 1
+R A V E N M I N E R   H Q   v 5 . 5 . 2
 May your difficulty be low. May your uptime be eternal.
 The ravens watch. The Allfather approves.
 ```
