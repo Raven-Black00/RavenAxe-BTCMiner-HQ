@@ -11985,54 +11985,109 @@ class RavenMinerDash:
         self._show_valknut_frame(self.valk_frames[-1])
 
     def _show_valknut_frame(self, pil_img):
-        # PERF-FIX-8: cache composited PhotoImage per (frame identity, canvas size).
-        # Avoids re-running LANCZOS resize + alpha_composite + PhotoImage alloc
-        # on every flash tick when nothing has changed.
-        cw = self.valk_canvas.winfo_width()  or 220
-        ch = self.valk_canvas.winfo_height() or 220
+        # PATCH-WM4: eliminate all blank-frame flashes.
+        # Core insight: Tkinter Canvas itemconfig(image=...) hot-swaps the image
+        # in-place with zero visible gap.  delete("all") is now called ONLY on the
+        # very first draw or after a canvas resize — never during animation frames.
+        #
+        # Flow:
+        #   1. Build / retrieve cached composite PhotoImage (unchanged from before).
+        #   2. If canvas items exist at the right size → itemconfig swap (no flash).
+        #   3. Otherwise → one-time delete/create to establish the item IDs.
+        cw = self.valk_canvas.winfo_width()  or 320
+        ch = self.valk_canvas.winfo_height() or 340
+        # Stable cache key: use vegvisir .size tuple, not id() of a copy
+        _vvp = getattr(self, "_vegvisir_pil", None)
         _cache_key = (id(pil_img), cw, ch,
-                      id(getattr(self, "_vegvisir_pil", None)))
+                      _vvp.size if _vvp is not None else None)
         _cache = getattr(self, "_valk_composite_cache", {})
         cached_photo = _cache.get(_cache_key)
-        if cached_photo is not None:
-            # reuse — still need to redraw the canvas item
-            self.valk_photo = cached_photo
-            self.valk_canvas.valk_photo = cached_photo
-            self.valk_canvas.delete("all")
-            self.valk_canvas.create_image(cw//2, ch//2, image=cached_photo, anchor="center")
-            return
-        # --- build background: COL_C + vegvisir layer at correct position ---
-        bg = Image.new("RGBA", (cw, ch), (9, 9, 18, 255))
-        try:
-            if getattr(self, "_vegvisir_pil", None) is not None:
-                pw  = self._vegvisir_pw
-                ph  = self._vegvisir_ph
-                vsz = self._vegvisir_pil.size[0]
-                # veg_canvas coords of valk_canvas top-left
-                vx  = self.valk_canvas.winfo_rootx() - self.veg_canvas.winfo_rootx()
-                vy  = self.valk_canvas.winfo_rooty() - self.veg_canvas.winfo_rooty()
-                # paste vegvisir onto full canvas bg, then crop to valk region
-                full = Image.new("RGBA", (pw, ph), (9, 9, 18, 255))
-                ox  = pw//2 - vsz//2
-                oy  = ph//2 - vsz//2
-                full.paste(self._vegvisir_pil, (ox, oy), self._vegvisir_pil)
-                crop = full.crop((vx, vy, vx+cw, vy+ch))
-                bg   = Image.alpha_composite(bg, crop)
-        except Exception:
-            pass
-        # --- composite valknut on top ---
-        valk = pil_img.resize((cw, ch), Image.LANCZOS)
-        result = Image.alpha_composite(bg, valk)
-        photo = ImageTk.PhotoImage(result)
-        # store in cache (cap at 32 entries to bound memory)
-        if len(_cache) >= 32:
-            _cache.clear()
-        _cache[_cache_key] = photo
-        self._valk_composite_cache = _cache
-        self.valk_photo = photo
-        self.valk_canvas.valk_photo = photo
+
+        if cached_photo is None:
+            # ── Cache MISS: build composite ──────────────────────────────────
+            bg = Image.new("RGBA", (cw, ch), (9, 9, 18, 255))
+            try:
+                if _vvp is not None:
+                    pw  = self._vegvisir_pw
+                    ph  = self._vegvisir_ph
+                    vsz = _vvp.size[0]
+                    vx  = self.valk_canvas.winfo_rootx() - self.veg_canvas.winfo_rootx()
+                    vy  = self.valk_canvas.winfo_rooty() - self.veg_canvas.winfo_rooty()
+                    full = Image.new("RGBA", (pw, ph), (9, 9, 18, 255))
+                    ox   = pw // 2 - vsz // 2
+                    oy   = ph // 2 - vsz // 2
+                    full.paste(_vvp, (ox, oy), _vvp)
+                    crop = full.crop((vx, vy, vx + cw, vy + ch))
+                    bg   = Image.alpha_composite(bg, crop)
+            except Exception:
+                pass
+            _sq   = min(cw, ch)          # FIX: fit within both axes
+            _ox   = (cw - _sq) // 2      # FIX: horizontal centre
+            _oy   = (ch - _sq) // 2      # FIX: vertical centre
+            _vsq  = pil_img.resize((_sq, _sq), Image.LANCZOS)
+            valk  = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
+            valk.paste(_vsq, (_ox, _oy), _vsq)  # FIX: centred paste
+            result = Image.alpha_composite(bg, valk)
+            cached_photo = ImageTk.PhotoImage(result)
+            if len(_cache) >= 32:
+                _cache.clear()
+            _cache[_cache_key]       = cached_photo
+            self._valk_composite_cache = _cache
+
+        # ── Draw (or update) canvas items ────────────────────────────────────
+        self.valk_photo              = cached_photo
+        self.valk_canvas.valk_photo  = cached_photo
+        _ht = getattr(self, "_hr_text_val", "--")
+        _hc = getattr(self, "_hr_text_col", PURPLE_GLOW)
+
+        _img_id  = getattr(self.valk_canvas, "_wm_img_id",  None)
+        _prev_cw = getattr(self.valk_canvas, "_wm_cw",      None)
+        _prev_ch = getattr(self.valk_canvas, "_wm_ch",      None)
+
+        if _img_id and _prev_cw == cw and _prev_ch == ch:
+            # ── FAST PATH: hot-swap — zero blank frames ───────────────────────
+            try:
+                self.valk_canvas.itemconfig(_img_id, image=cached_photo)
+                if self._hr_text_id:
+                    self.valk_canvas.itemconfig(self._hr_text_id, text=_ht, fill=_hc)
+                if self._hr_unit_id:
+                    self.valk_canvas.itemconfig(self._hr_unit_id, text="TH/s")
+                return
+            except Exception:
+                pass  # items stale — fall through to full create
+
+        # ── SLOW PATH: first draw or canvas resized (rare) ───────────────────
+        # FIX-FLASH: when items already exist (resize case), update in-place
+        # via itemconfig + coords so the canvas is NEVER blank for even one frame.
+        # delete("all") is only reached on the very first draw when the canvas
+        # is guaranteed to be empty — no visible flash possible there.
+        if _img_id:
+            try:
+                self.valk_canvas.itemconfig(_img_id, image=cached_photo)
+                self.valk_canvas.coords(_img_id, cw // 2, ch // 2)
+                if self._hr_text_id:
+                    self.valk_canvas.itemconfig(self._hr_text_id, text=_ht, fill=_hc)
+                    self.valk_canvas.coords(self._hr_text_id, cw // 2, ch - 70)
+                if self._hr_unit_id:
+                    self.valk_canvas.coords(self._hr_unit_id, cw // 2, ch - 22)
+                self.valk_canvas._wm_cw = cw
+                self.valk_canvas._wm_ch = ch
+                return
+            except Exception:
+                pass  # items truly stale — fall through to fresh create
+        # First-ever draw: canvas is empty, safe to create without deleting
         self.valk_canvas.delete("all")
-        self.valk_canvas.create_image(cw//2, ch//2, image=photo, anchor="center")
+        _img_id = self.valk_canvas.create_image(
+            cw // 2, ch // 2, image=cached_photo, anchor="center")
+        self._hr_text_id = self.valk_canvas.create_text(
+            cw // 2, ch - 70, text=_ht,
+            font=("Courier", 72, "bold"), fill=_hc, anchor="center")
+        self._hr_unit_id = self.valk_canvas.create_text(
+            cw // 2, ch - 22, text="TH/s",
+            font=("Courier", 20), fill=GOLD, anchor="center")
+        self.valk_canvas._wm_img_id = _img_id
+        self.valk_canvas._wm_cw     = cw
+        self.valk_canvas._wm_ch     = ch
 
     def _trigger_valknut_flash(self):
         if self.valk_flash or not self.valk_frames:
@@ -12189,7 +12244,28 @@ class RavenMinerDash:
             print("Raven flash error:", e)
 
 
+    def _build_avg_canvas_boxes(self):
+        c=self.veg_canvas; cw=c.winfo_width()
+        if not hasattr(self,"_avg_top_div"): return
+        dy=self._avg_top_div.winfo_y()+2
+        if cw<10 or dy<2: self.root.after(100,self._build_avg_canvas_boxes); return
+        c.delete("avg_boxes")
+        BH,BW=72,175
+        cy=dy+6
+        for x,lbl,aid in [
+            (30,"1m AVG","_avg_1m_id"),
+            (cw//2-BW//2,"10m AVG","_avg_10m_id"),
+            (cw-30-BW,"1h AVG","_avg_1h_id")]:
+            c.create_rectangle(x,cy,x+BW,cy+BH,outline=GOLD,fill="",width=1,tags="avg_boxes")
+            c.create_text(x+BW//2,cy+18,text=lbl,fill=GOLD,font=("Courier",12),tags="avg_boxes")
+            vid=c.create_text(x+BW//2,cy+48,text="--",fill=GOLD,font=("Courier",20,"bold"),tags="avg_boxes")
+            setattr(self,aid,vid)
+        try: c.tag_raise("avg_boxes","vegvisirimg")
+        except Exception: pass
+        c.bind("<Configure>",lambda e:self.root.after(60,self._build_avg_canvas_boxes),add="+")
+
     def _draw_vegvisir_centre(self, parent):
+
         global _VEGVISIR_PIL_CACHE
         if not PIL_OK:
             return
@@ -12198,6 +12274,12 @@ class RavenMinerDash:
             ph = parent.winfo_height()
             if pw < 10:  # not rendered yet, retry
                 parent.after(300, lambda: self._draw_vegvisir_centre(parent))
+                return
+            # PATCH-WM1: skip rebuild when size is identical — keeps _vegvisir_pil
+            # object identity stable so the composite cache key never busts spuriously.
+            if (getattr(self, '_vegvisir_pw', None) == pw
+                    and getattr(self, '_vegvisir_ph', None) == ph
+                    and getattr(self, '_vegvisir_pil', None) is not None):
                 return
             if _VEGVISIR_PIL_CACHE is None:
                 raw = base64.b64decode(VEGVISIR_B64)
@@ -12222,13 +12304,24 @@ class RavenMinerDash:
             photo = ImageTk.PhotoImage(img)
             self._vegvisir_photo = photo
             self.veg_canvas.veg_photo = photo
-            self.veg_canvas.delete("vegvisir_img")
-            self.veg_canvas.create_image(pw//2, ph//2, image=photo, anchor="center", tags="vegvisir_img")
-            self.veg_canvas.tag_lower("vegvisir_img")
-            if self.veg_canvas.find_withtag("valknut"):
-                self.veg_canvas.tag_raise("valknut")
+            # FIX-FLASH: itemconfig in-place to avoid blank frame on resize
+            _vv_id = getattr(self.veg_canvas, "_vv_item_id", None)
+            if _vv_id and self.veg_canvas.find_withtag("vegvisir_img"):
+                self.veg_canvas.itemconfig(_vv_id, image=photo)
+                self.veg_canvas.coords(_vv_id, pw // 2, ph // 2)
+            else:
+                _vv_id = self.veg_canvas.create_image(
+                    pw // 2, ph // 2, image=photo, anchor="center", tags="vegvisir_img")
+                self.veg_canvas._vv_item_id = _vv_id
+                self.veg_canvas.tag_lower("vegvisir_img")
+                if self.veg_canvas.find_withtag("valknut"):
+                    self.veg_canvas.tag_raise("valknut")
             # Draw gold ravens flanking the watermark
             self._draw_raven_pair(self.veg_canvas, pw, ph)
+            # PATCH-WM4b: pre-warm valk_canvas composite so the cache is hot
+            # before the first share flash — avoids a cold-miss redraw later.
+            if getattr(self, "valk_frames", None):
+                self.root.after(0, lambda: self._show_valknut_frame(self.valk_frames[-1]))
         except Exception as e:
             print("Vegvisir centre error:", e)
 
@@ -12415,27 +12508,24 @@ class RavenMinerDash:
         self.veg_canvas.veg_photo = None
         p.after(500, lambda: self._draw_vegvisir_centre(p))
         self._section_title(p,RUNE_HASH+"HASHRATE",COL_C)
-        self.valk_canvas=Canvas(p,width=220,height=220,bg=COL_C,highlightthickness=0)
-        self.valk_canvas.pack(pady=(4,0))
+        self.valk_canvas=Canvas(p,width=220,height=340,bg=COL_C,highlightthickness=0)
+        self.valk_canvas.pack(pady=(4,0), fill="x")
         self.valk_canvas.valk_photo=None
         # v3.9.3: lbl_live created in build() bottom bar stack
         self._live_pulse_id  = None
         self._gold_pulse_id  = None
-        self.lbl_hashrate=tk.Label(p,text="--",font=("Courier",72,"bold"),fg=PURPLE_GLOW,bg=COL_C)
-        self.lbl_hashrate.pack()
-        tk.Label(p,text="TH/s",font=("Courier",20),fg=GOLD,bg=COL_C).pack()
-        self._divider(p)
-        avg_row=tk.Frame(p,bg=COL_C)
-        avg_row.pack(fill="x",padx=20,pady=8)
-        for col,label,attr in [(0,"1m AVG","lbl_hr1m"),(1,"10m AVG","lbl_hr10m"),(2,"1h AVG","lbl_hr1h")]:
-            f=tk.Frame(avg_row,bg=COL_C)
-            f.grid(row=0,column=col,padx=6,sticky="nsew")
-            avg_row.columnconfigure(col,weight=1)
-            tk.Label(f,text=label,font=("Courier",11),fg=GOLD,bg=COL_C).pack(pady=(5,0))
-            lbl=tk.Label(f,text="--",font=("Courier",18,"bold"),fg=GOLD,bg=COL_C)
-            lbl.pack(pady=(0,5))
-            setattr(self,attr,lbl)
-        self._divider(p)
+        # v5.5.3: hashrate text lives on valk_canvas — fully transparent over watermark
+        self._hr_text_val = "--"
+        self._hr_text_col = PURPLE_GLOW
+        self._hr_text_id  = None   # set/refreshed inside _show_valknut_frame
+        self._hr_unit_id  = None
+        self._avg_top_div=tk.Frame(p,height=1,bg=PURPLE_DIM)
+        self._avg_top_div.pack(fill="x",pady=(1,0))
+        tk.Frame(p,height=1,bg=PURPLE_DIM).pack(fill="x",pady=(88,1))
+        for _a in ("lbl_hr1m","lbl_hr10m","lbl_hr1h"):
+            _l=tk.Label(p,text="--",font=("Courier",1),fg=COL_C,bg=COL_C)
+            _l.place(x=-9999,y=-9999); setattr(self,_a,_l)
+        p.after(350,self._build_avg_canvas_boxes)
         tk.Label(p,text="HASHRATE HISTORY  (TH/s)",font=("Courier",11),fg=GOLD,bg=COL_C).pack(pady=(8,2))
         self.bar_canvas=Canvas(p,bg=BG,highlightthickness=0,height=220)
         self.bar_canvas.pack(fill="x",padx=0)
@@ -13542,7 +13632,7 @@ class RavenMinerDash:
         floor   = mn - data_range * 0.18  # 18% headroom below min — dips low
         ceiling = mx + data_range * 0.18  # 18% headroom above max — peaks high
 
-        sub_w   = max(1.0, (w - 72) / max(1, n * 8))  # float: fills full width
+        sub_w   = max(1.0, (w - 100) / max(1, n * 8))  # v5.5.2: 100 = 2×scale_w(50) — bars stay inside label columns
         seg_h   = 5
         seg_gap = 2
         seg_unit = seg_h + seg_gap
@@ -13584,7 +13674,7 @@ class RavenMinerDash:
         for gi in range(n_grid + 1):
             frac  = gi / n_grid
             hr_val = floor + frac * (ceiling - floor)
-            gy    = int(h - 2 - frac * (h - 4))
+            gy    = int((h - 8) - frac * (h - 16))  # v5.5.2: 8 px top/bottom margin — stops edge clipping
             # faint grid line
             c.create_line(scale_w, gy, w - scale_w, gy,
                           fill="#1a1035", width=1)
@@ -13782,7 +13872,7 @@ class RavenMinerDash:
             self._hvp_id = self.root.after(200, self._hash_violet_pulse)
             return
         try:
-            if not self.lbl_hashrate.winfo_exists():
+            if not self.valk_canvas.winfo_exists():
                 return
         except Exception:
             return
@@ -13824,7 +13914,9 @@ class RavenMinerDash:
 
         # ── Only fg changes — font fixed at 72pt on label creation (P3) ──────
         try:
-            self.lbl_hashrate.config(fg=color)
+            self._hr_text_col = color
+            if self._hr_text_id:
+                self.valk_canvas.itemconfig(self._hr_text_id, fill=color)
         except Exception as _e:
             print(f"[RavenMiner] ignored error: {_e}")  # STYLE-04
 
@@ -14556,10 +14648,15 @@ class RavenMinerDash:
         self._tray_temp = temp   # cached for tray tooltip
         hr10=(d.get("hashRate_10m") or 0)/1000
         hr1h=(d.get("hashRate_1h") or 0)/1000
-        self.lbl_hashrate.config(text=f"{hr:.3f}")
+        self._hr_text_val = f"{hr:.3f}"
+        if getattr(self, "_hr_text_id", None):
+            try: self.valk_canvas.itemconfig(self._hr_text_id, text=self._hr_text_val)
+            except Exception: pass
         self.lbl_hr1m.config(text=str(round(hr1m,3))+" TH/s")
         self.lbl_hr10m.config(text=str(round(hr10,3))+" TH/s")
         self.lbl_hr1h.config(text=str(round(hr1h,3))+" TH/s")
+        for _id,_v in (("_avg_1m_id",hr1m),("_avg_10m_id",hr10),("_avg_1h_id",hr1h)):
+            if hasattr(self,_id): self.veg_canvas.itemconfig(getattr(self,_id),text=f"{round(_v,3)} TH/s")
         self.hr_history.append(hr)
         self._last_data_time = _hr_now
         if not hasattr(self, "_last_hr_draw") or _hr_now - self._last_hr_draw >= HR_REFRESH:
