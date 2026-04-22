@@ -14,6 +14,9 @@
 # ║   v5.3.0  ·  Odin's Eye — Threaded Apply Fix     ·  April 5, 2026    ║
 # ║   v5.4.0  ·  CR7 Bug & Perf Audit                ·  April 9, 2026    ║
 # ║   v5.4.5  ·  Graph 2× PIL Anti-Aliased Line + 2× History   ·  April 9, 2026    ║
+# ║   v5.5.7  ·  Selene's Vigil — UTF-8 & Stability Hardening ·  April 17, 2026  ║
+# ║   v5.5.8  ·  Gear Icon Animation 2× Speed Boost           ·  April 22, 2026  ║
+# ║   v5.5.9  ·  Gear Icon Animation 4× Speed Boost           ·  April 22, 2026  ║
 # ║   Bugs hunted, hashed, and hammered flat by Alan & Selene in a single  ║
 # ║   session, before the morning mead was poured.                          ║
 # ║                                                                          ║
@@ -210,6 +213,34 @@
 # ║                    each direction. Arrow reacts to rate-of-change, not    ║
 # ║                    just presence of bad shares.                           ║
 # ╚══════════════════════════════════════════════════════════════════════════╝
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║  ── v5.5.7 patch-set (Selene's Vigil — Selene / Claude Sonnet 4.6) ─── ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║  ── v5.5.8 patch-set (Gear Speed — Selene / Claude Sonnet 4.6)      ─── ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║  ── v5.5.9 patch-set (Gear Speed II — Selene / Claude Sonnet 4.6)  ─── ║
+# ║  G3  QOL — Gear idle 4× original speed (1.80°/tick, 16ms interval).  ║
+# ║  G4  QOL — Gear hover 4× original speed (4.8°/tick, 8ms interval).   ║
+# ║  G1  QOL — Gear icon idle rotation 2× faster (0.45°→0.90°/tick,      ║
+# ║             50ms→30ms interval). Heim counter-spin 0.78°→1.56°.       ║
+# ║  G2  QOL — Gear icon hover rotation 2× faster (1.2°→2.4°/tick,       ║
+# ║             30ms→16ms interval). Heim counter-spin 2.0°→4.0°.         ║
+# ║  S1  HIGH — open(CONFIG_FILE, "r/w") now encoding="utf-8".              ║
+# ║             Prevented silent config corruption on CP1252 Windows locale. ║
+# ║  S2  HIGH — open(ALERT_CONFIG_FILE, "r/w") now encoding="utf-8".        ║
+# ║             Same locale-corruption risk as S1, now fixed.                ║
+# ║  S3  MED  — _ping_history deque now deque(maxlen=500).                   ║
+# ║             Eliminates unbounded growth; removes need for while-pruning. ║
+# ║  S4  MED  — fetch_btc() r.json() now uses .get("bitcoin",{}).get("usd") ║
+# ║             KeyError guard. CoinGecko schema change no longer silently   ║
+# ║             crashes the BTC price thread.                                ║
+# ║  S5  LOW  — REFRESH global snapshotted into local _refresh_interval      ║
+# ║             at top of each _refresh_loop() tick. Thread-safe local read. ║
+# ║  S6  LOW  — macOS/Linux startup sound subprocess.Popen() calls now pass  ║
+# ║             stdout=DEVNULL, stderr=DEVNULL. No console noise on startup.  ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
 
 import tkinter as tk
 from tkinter import Canvas
@@ -235,7 +266,7 @@ except ImportError:
 # ║  • Raven pulse: transparent BG fix (glow no longer bleeds alpha=0)    ║
 # ║  • FREQ. OC gauge: forked lightning overlay when freq ≥ 800 MHz       ║
 # ────────────────────────────────────────────────────────────────────────
-_APP_VER = "5.5.6"
+_APP_VER = "5.5.9"
 VERSION  = f"v{_APP_VER}"
 
 STARTUP_WAV_B64 = (
@@ -11547,14 +11578,14 @@ CONFIG_FILE = _get_config_path()
 
 def load_config():
     try:
-        with open(CONFIG_FILE, "r") as f:
+        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     except (json.JSONDecodeError, OSError):
         return {}
 
 def save_config(data):
     try:
-        with open(CONFIG_FILE, "w") as f:
+        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
     except Exception as e:
         print("Config save error:", e)
@@ -11575,7 +11606,7 @@ ALERT_CONFIG_FILE = _get_alert_config_path()
 
 def load_alert_config():
     try:
-        with open(ALERT_CONFIG_FILE, "r") as f:
+        with open(ALERT_CONFIG_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception:
         return {
@@ -11590,7 +11621,7 @@ def load_alert_config():
 def save_alert_config(cfg):
     global _alert_cfg_global_cache  # v3.9.7: moved to top of function
     try:
-        with open(ALERT_CONFIG_FILE, "w") as f:
+        with open(ALERT_CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump(cfg, f, indent=2)
     except Exception as e:
         print("Alert config save error:", e)
@@ -12750,7 +12781,7 @@ class RavenMinerDash:
             font=('Courier', 14, 'bold'), fg=GOLD_BRIGHT, bg=COL_C)
         self.lbl_pool_user.pack(anchor='e')
         self._ping_in_flight = False
-        self._ping_history      = deque()  # rolling (timestamp, ms) pairs
+        self._ping_history      = deque(maxlen=500)  # rolling (timestamp, ms) pairs — maxlen cap prevents unbounded growth (S3)
         self._ping_history_lock = threading.Lock()  # BUG-02: guard TOCTOU
         self._ping_line_photo   = None   # FIX-7: GC guard — PIL ECG PhotoImage
         self._ping_ecg_id       = None   # FIX-7: root.after() handle for ECG loop
@@ -12915,13 +12946,13 @@ class RavenMinerDash:
                 gear_cv._shimmer_id = gear_cv.after(200, _shimmer_loop)
                 return
             gear_cv._shimmer_phase = (gear_cv._shimmer_phase + 1) % 3600
-            gear_cv._rune_angle    = (gear_cv._rune_angle + 0.45) % 360.0
-            gear_cv._heim_angle    = (gear_cv._heim_angle - 0.78) % 360.0
+            gear_cv._rune_angle    = (gear_cv._rune_angle + 1.80) % 360.0
+            gear_cv._heim_angle    = (gear_cv._heim_angle - 3.12) % 360.0
             _render_gear(hover=False, shimmer_phase=gear_cv._shimmer_phase)
-            gear_cv._shimmer_id = gear_cv.after(50, _shimmer_loop)
+            gear_cv._shimmer_id = gear_cv.after(16, _shimmer_loop)
 
         _render_gear(hover=False)
-        gear_cv._shimmer_id = gear_cv.after(50, _shimmer_loop)
+        gear_cv._shimmer_id = gear_cv.after(16, _shimmer_loop)
 
         def _gear_enter(e):
             if gear_cv._shimmer_id:
@@ -12935,15 +12966,15 @@ class RavenMinerDash:
                 except Exception: return
                 if not gear_cv._hover_active: return
                 gear_cv._shimmer_phase = (gear_cv._shimmer_phase + 2) % 3600
-                gear_cv._rune_angle    = (gear_cv._rune_angle + 1.2) % 360.0
-                gear_cv._heim_angle    = (gear_cv._heim_angle - 2.0) % 360.0
+                gear_cv._rune_angle    = (gear_cv._rune_angle + 4.8) % 360.0
+                gear_cv._heim_angle    = (gear_cv._heim_angle - 8.0) % 360.0
                 _render_gear(hover=True, shimmer_phase=gear_cv._shimmer_phase)
-                gear_cv._shimmer_id = gear_cv.after(30, _hover_loop)
+                gear_cv._shimmer_id = gear_cv.after(8, _hover_loop)
             _hover_loop()
 
         def _gear_leave(e):
             gear_cv._hover_active = False
-            gear_cv._shimmer_id = gear_cv.after(50, _shimmer_loop)
+            gear_cv._shimmer_id = gear_cv.after(16, _shimmer_loop)
 
         gear_cv.bind("<Enter>",    _gear_enter)
         gear_cv.bind("<Leave>",    _gear_leave)
@@ -14224,8 +14255,8 @@ class RavenMinerDash:
         except Exception:
             try:
                 import subprocess, sys
-                if sys.platform=="darwin": subprocess.Popen(["afplay","/System/Library/Sounds/Glass.aiff"])
-                else: subprocess.Popen(["paplay","/usr/share/sounds/freedesktop/stereo/complete.oga"])
+                if sys.platform=="darwin": subprocess.Popen(["afplay","/System/Library/Sounds/Glass.aiff"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)  # S6: suppress console noise
+                else: subprocess.Popen(["paplay","/usr/share/sounds/freedesktop/stereo/complete.oga"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)  # S6: suppress console noise
             except Exception: self.root.bell()
 
     def _tick_clock(self):
@@ -14685,9 +14716,12 @@ class RavenMinerDash:
         try:
             r=requests.get("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd",timeout=6)
             r.raise_for_status()  # FIX6: raise on 4xx/5xx (e.g. rate-limit 429)
+            _btc_data = r.json()  # S4: parse outside lock; guard against schema change
+            _btc_usd = _btc_data.get("bitcoin", {}).get("usd")  # S4: .get() — KeyError-safe
             with self._btc_lock:
-                self.btc=r.json()["bitcoin"]["usd"]
-                self._btc_error = None  # FIX6: clear error flag on success
+                if _btc_usd is not None:
+                    self.btc = _btc_usd
+                self._btc_error = None  # S4/FIX6: clear error flag on success
         except Exception as _e:
             with self._btc_lock:
                 self._btc_error = str(_e)  # FIX6: store error — UI tooltip shows '--'
@@ -14710,7 +14744,8 @@ class RavenMinerDash:
                     self.root.after(50, self._dispatch_update)  # v3.9.3: breathing room
             except Exception as _loop_ex:
                 print(f"refresh_loop error (non-fatal): {_loop_ex}")
-            time.sleep(max(REFRESH, 0.1))
+            _refresh_interval = max(REFRESH, 0.1)  # S5: snapshot global once per tick (GIL-safe local read)
+            time.sleep(_refresh_interval)
 
     def start_refresh(self): threading.Thread(target=self.refresh_loop,daemon=True).start()
 
